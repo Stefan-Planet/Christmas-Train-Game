@@ -26,7 +26,8 @@ const assetFiles={
 };
 for(const [key,src] of Object.entries(assetFiles)){const img=new Image();img.src=src;img.onload=()=>{assets[key]=img};img.onerror=()=>console.warn('Could not load game asset:',src);}
 const laneWidth=110; // 10px white gap between 110px-wide lanes, 120px centre spacing.
-const drawAsset=(key,px,py,w,h)=>{const img=assets[key];if(img&&img.complete&&img.naturalWidth){x.drawImage(img,Math.round(px-w/2),Math.round(py-h/2),w,h);return true}return false;};function resize(){let r=c.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);c.width=r.width*d;c.height=r.height*d;x.setTransform(c.width/W,0,0,c.height/H,0,0)}new ResizeObserver(resize).observe(c);resize();const $=id=>document.getElementById(id);let mode='menu',lane=1,score=0,distance=0,speed=190,items=[],spawnTimer=0,shield=0,flash=0,last=0,combo=0,player='Driver',email='',elapsed=0,worldScroll=0;let brokenTrackState='idle',brokenLane=1,brokenTimer=0,brokenStarted=false,nextBrokenAt=Infinity,slalomQueue=[],slalomCooldown=0;const laneX=[180,300,420],playerY=674,hitY=642;let snow=Array.from({length:100},()=>({x:Math.random()*W,y:Math.random()*H,s:1+Math.random()*2,v:12+Math.random()*25}));let blizzardState='idle',blizzardTimer=25,blizzardTime=0,blizzardFlakes=Array.from({length:145},()=>({x:Math.random()*W,y:Math.random()*H,s:1+Math.random()*3,v:220+Math.random()*430,drift:-65+Math.random()*130}));
+const drawAsset=(key,px,py,w,h)=>{const img=assets[key];if(img&&img.complete&&img.naturalWidth){x.drawImage(img,Math.round(px-w/2),Math.round(py-h/2),w,h);return true}return false;};function resize(){let r=c.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);c.width=r.width*d;c.height=r.height*d;x.setTransform(c.width/W,0,0,c.height/H,0,0)}new ResizeObserver(resize).observe(c);resize();const $=id=>document.getElementById(id);let mode='menu',lane=1,score=0,distance=0,speed=190,items=[],spawnTimer=0,shield=0,flash=0,last=0,combo=0,player='Driver',email='',elapsed=0,worldScroll=0;let brokenTrackState='idle',brokenLane=1,brokenTimer=0,brokenStarted=false,nextBrokenAt=Infinity,slalomQueue=[],slalomCooldown=0;
+let brokenScrollStart=0;const laneX=[180,300,420],playerY=674,hitY=642;let snow=Array.from({length:100},()=>({x:Math.random()*W,y:Math.random()*H,s:1+Math.random()*2,v:12+Math.random()*25}));let blizzardState='idle',blizzardTimer=25,blizzardTime=0,blizzardFlakes=Array.from({length:145},()=>({x:Math.random()*W,y:Math.random()*H,s:1+Math.random()*3,v:220+Math.random()*430,drift:-65+Math.random()*130}));
 const rect=(a,b,w,h,col)=>{x.fillStyle=col;x.fillRect(Math.round(a),Math.round(b),Math.round(w),Math.round(h))};function poly(p,col,stroke){x.beginPath();p.forEach((q,i)=>i?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]));x.closePath();x.fillStyle=col;x.fill();if(stroke){x.strokeStyle=stroke;x.lineWidth=2;x.stroke()}}
 function tree(px,py,s,lights=true){x.save();x.translate(px,py);x.scale(s,s);rect(-5,-2,10,25,'#765039');poly([[-2,-72],[-30,-22],[-17,-25],[-40,2],[40,2],[17,-25],[30,-22],[2,-72]],'#174d40','#0b382f');poly([[-1,-65],[-22,-27],[-12,-30],[0,-44],[12,-30],[22,-27]],'#d9e9df');if(lights){rect(-18,-22,4,4,'#f4d16e');rect(12,-34,4,4,'#d85b4e');rect(-3,-48,4,4,'#f4d16e')}x.restore()}
 function cabin(px,py,s){x.save();x.translate(px,py);x.scale(s,s);rect(-28,-22,56,34,'#9d5144');poly([[-34,-22],[0,-49],[34,-22]],'#4c3a39');rect(-8,-9,16,21,'#533a32');rect(-23,-12,10,10,'#f7d67b');rect(13,-12,10,10,'#f7d67b');rect(-25,-14,14,3,'#fff0c9');rect(11,-14,14,3,'#fff0c9');rect(-34,10,68,5,'#e8eee0');x.restore()}
@@ -47,62 +48,88 @@ function drawScrollingTrack(cx) {
     x.drawImage(img, left, y, laneWidth, tileHeight);
   }
 }
+
 function background(dt){
- 
-  // Clean white winter playfield. Three 110px tracks with exactly 10px white gaps.
   rect(0,0,W,H,'#ffffff');
 
   for(let k=0;k<3;k++){
-    const cx=laneX[k],left=cx-laneWidth/2,closed=(brokenTrackState==='active'&&k===brokenLane);
+    const cx=laneX[k];
+    const left=cx-laneWidth/2;
+    const closed=brokenTrackState==='active'&&k===brokenLane;
+    const reopening=brokenTrackState==='reopening'&&k===brokenLane;
 
-    if(!closed){
+    if(closed){
+      // The lane is white, with the final track-end section scrolling down.
+      const endImg=assets.trackEnd;
+      const progress=worldScroll-brokenScrollStart;
+      const h=endImg&&endImg.complete&&endImg.naturalWidth
+        ? laneWidth*endImg.naturalHeight/endImg.naturalWidth
+        : 170;
 
-      // Vertically tiled, scrolling track artwork.
-      drawScrollingTrack(cx);
+      const endY=H*0.45+progress;
+      const endTop=endY-h;
 
-    }else{
-
-      // A closed outer lane has a white gap between the supplied far and near track-end pieces.
-      rect(left,0,laneWidth,H,'#ffffff');
-
-      const topImg=assets.trackStart,bottomImg=assets.trackEnd;
-
-      if(topImg&&topImg.complete&&topImg.naturalWidth){
-        const h=Math.min(170,laneWidth*topImg.naturalHeight/topImg.naturalWidth);
-        x.drawImage(topImg,left,0,laneWidth,h);
+      // Keep normal track above the end of the railway.
+      if(endTop>0){
+        x.save();
+        x.beginPath();
+        x.rect(left,0,laneWidth,Math.min(H,endTop));
+        x.clip();
+        drawScrollingTrack(cx);
+        x.restore();
       }
 
-      if(bottomImg&&bottomImg.complete&&bottomImg.naturalWidth){
-        const h=Math.min(170,laneWidth*bottomImg.naturalHeight/bottomImg.naturalWidth);
-        x.drawImage(bottomImg,left,H-h,laneWidth,h);
+      // Draw the moving Track-End.
+      if(endImg&&endImg.complete&&endImg.naturalWidth&&endY>0&&endTop<H){
+        x.drawImage(endImg,left,Math.floor(endTop),laneWidth,h);
       }
 
-      // A clear closure label remains visible even if the supplied artwork is subtle.
-      x.save();
-      x.fillStyle='rgba(255,255,255,.88)';
-      x.fillRect(cx-42,H*.48-17,84,34);
-      x.strokeStyle='#b83d3d';
-      x.lineWidth=2;
-      x.strokeRect(cx-42,H*.48-17,84,34);
-      x.fillStyle='#8f2929';
-      x.textAlign='center';
-      x.textBaseline='middle';
-      x.font='bold 11px Inter,sans-serif';
-      x.fillText('NO TRACK',cx,H*.48);
-      x.restore();
+      // Everything below the end is simply the white background.
+      continue;
+    }
+
+    // Normal track resumes after the closure.
+    drawScrollingTrack(cx);
+
+    if(reopening){
+      const startImg=assets.trackStart;
+
+      if(startImg&&startImg.complete&&startImg.naturalWidth){
+        const h=laneWidth*startImg.naturalHeight/startImg.naturalWidth;
+        const progress=worldScroll-brokenScrollStart;
+        const startY=-h+progress;
+
+        // The Track-Start scrolls down into the returning railway.
+        if(startY<H&&startY+h>0){
+          x.drawImage(startImg,left,Math.floor(startY),laneWidth,h);
+        }
+      }
     }
   }
 
-  // Track closure warning highlights the lane that is about to close.
+  // Track closure warning.
   if(brokenTrackState==='warning'){
-    const cx=laneX[brokenLane],blink=Math.floor(elapsed*5)%2===0;
-    x.save();x.fillStyle='rgba(255,190,70,.16)';x.fillRect(cx-laneWidth/2,0,laneWidth,H);
-    x.fillStyle=blink?'#f2c45e':'#b8443f';x.fillRect(cx-48,286,96,48);
-    x.strokeStyle='#fff0c8';x.lineWidth=3;x.strokeRect(cx-48,286,96,48);
-    x.fillStyle='#243b3b';x.textAlign='center';x.textBaseline='middle';x.font='bold 12px Inter,sans-serif';
-    x.fillText('TRACK',cx,301);x.fillText('OUT AHEAD',cx,318);x.restore();
+    const cx=laneX[brokenLane];
+    const blink=Math.floor(elapsed*5)%2===0;
+
+    x.save();
+    x.fillStyle='rgba(255,190,70,.16)';
+    x.fillRect(cx-laneWidth/2,0,laneWidth,H);
+    x.fillStyle=blink?'#f2c45e':'#b8443f';
+    x.fillRect(cx-48,286,96,48);
+    x.strokeStyle='#fff0c8';
+    x.lineWidth=3;
+    x.strokeRect(cx-48,286,96,48);
+    x.fillStyle='#243b3b';
+    x.textAlign='center';
+    x.textBaseline='middle';
+    x.font='bold 12px Inter,sans-serif';
+    x.fillText('TRACK',cx,301);
+    x.fillText('OUT AHEAD',cx,318);
+    x.restore();
   }
 }
+
 function present(px,py){
   if(drawAsset('present',px,py,46,46))return;
   x.save();x.translate(px,py);poly([[-22,-9],[0,-21],[22,-9],[0,3]],'#f1d16f','#805b35');poly([[-22,-9],[0,3],[0,29],[-22,17]],'#b93643','#712d35');poly([[0,3],[22,-9],[22,17],[0,29]],'#d94d4c','#712d35');rect(-4,-19,8,47,'#f8e8a6');rect(-22,-3,44,7,'#f8e8a6');poly([[-8,-22],[-15,-29],[-5,-30],[0,-23],[5,-30],[15,-29],[8,-22]],'#f4d06d');x.restore();
@@ -280,7 +307,8 @@ function start(){player=$('username').value.trim()||'Santa';email=$('email').val
 function finish(){if(mode!=='playing')return;mode='over';$('hud').classList.add('hidden');let data=JSON.parse(localStorage.getItem('xmasExpressScores')||'[]');data.push({name:player,score,date:Date.now()});data.sort((a,b)=>b.score-a.score);localStorage.setItem('xmasExpressScores',JSON.stringify(data.slice(0,10)));$('resultText').textContent=`${player} — final score ${score}. Presents collected: ${combo} · Distance: ${Math.floor(distance)}m.`;$('gameover').classList.remove('hidden')}
 function board(){let data=JSON.parse(localStorage.getItem('xmasExpressScores')||'[]');$('scoreRows').innerHTML=data.length?data.slice(0,10).map((r,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(r.name)}</td><td>${r.score}</td></tr>`).join(''):'<tr><td colspan="3" style="text-align:center;padding:22px">No runs yet — be the first!</td></tr>';$('leader').classList.remove('hidden');$('menu').classList.add('hidden');$('gameover').classList.add('hidden')}
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
-function move(d){if(mode!=='playing')return;let target=Math.max(0,Math.min(2,lane+d));if(brokenTrackState==='active'&&target===brokenLane){flash=Math.max(flash,.12);return}lane=target}
+function move(d){if(mode!=='playing')return;let target=Math.max(0,Math.min(2,lane+d));if((brokenTrackState==='active'||brokenTrackState==='reopening')&&target===brokenLane)
+{flash=Math.max(flash,.12);return}lane=target}
 function drawBlizzard(){
   if(blizzardState==='idle')return;
   if(blizzardState==='warning'){
@@ -301,8 +329,8 @@ function drawTrackAlert(){
    x.fillStyle='rgba(93,27,24,.92)';x.fillRect(76,183,448,54);x.strokeStyle='#f5cf78';x.lineWidth=3;x.strokeRect(76,183,448,54);
    x.textAlign='center';x.textBaseline='middle';x.font='16px "Press Start 2P", monospace';x.fillStyle='#fff2c8';x.fillText('TRACK OUT AHEAD!',300,210);
    x.font='bold 12px Inter,sans-serif';x.fillStyle='#ffe4a0';x.fillText('SWITCH TRACKS NOW',300,258);
- }else{
-   x.fillStyle='rgba(94,25,26,.88)';x.fillRect(110,183,380,47);x.strokeStyle='#f5cf78';x.lineWidth=2;x.strokeRect(110,183,380,47);
+}else if(brokenTrackState==='active'){
+   x.fillStyle='rgba(94,25,26,.88)'; x.fillRect(110,183,380,47);x.strokeStyle='#f5cf78';x.lineWidth=2;x.strokeRect(110,183,380,47);
    x.textAlign='center';x.textBaseline='middle';x.font='13px "Press Start 2P", monospace';x.fillStyle='#fff2c8';x.fillText('TRACK CLOSED',300,206);
    x.font='bold 11px Inter,sans-serif';x.fillStyle='#ffe4a0';x.fillText(Math.ceil(brokenTimer)+'s UNTIL REOPENING',300,248);
  }
@@ -313,7 +341,7 @@ function frame(t){
   let dt=Math.min((t-last)/1000||0,.04);last=t;
   if(mode==='playing'){
     elapsed+=dt;
-    // From 2,000m or 90 seconds, warn the player before closing one track for 15 seconds.
+    // From 2,000m or 90 seconds, warn the player before closing one track for 10 seconds.
     if(brokenTrackState==='idle'&&!brokenStarted&&(distance>=2000||elapsed>=90)){
       brokenStarted=true;startBrokenTrack();
     }else if(brokenTrackState==='idle'&&brokenStarted&&elapsed>=nextBrokenAt){startBrokenTrack()}
@@ -322,7 +350,9 @@ function frame(t){
       if(brokenTimer<=0){
         if(lane===brokenLane){finish()}
         else {
-          brokenTrackState='active';brokenTimer=15;
+          brokenTrackState='active';
+brokenTimer=10;
+brokenScrollStart=worldScroll;
           // Remove hazards already in flight so the two surviving adjacent tracks
           // cannot inherit a double-blocked row as the closure begins.
           items=items.filter(o=>o.kind!=='obstacle');
@@ -330,9 +360,25 @@ function frame(t){
         }
       }
     }else if(brokenTrackState==='active'){
-      brokenTimer-=dt;
-      if(brokenTimer<=0){brokenTrackState='idle';brokenTimer=0;nextBrokenAt=elapsed+48+Math.random()*17;}
-    }
+  brokenTimer-=dt;
+
+  if(brokenTimer<=0){
+    brokenTrackState='reopening';
+    brokenScrollStart=worldScroll;
+    brokenTimer=0;
+  }
+
+}else if(brokenTrackState==='reopening'){
+  const img=assets.trackStart;
+  const h=img&&img.complete&&img.naturalWidth
+    ? laneWidth*img.naturalHeight/img.naturalWidth
+    : 170;
+
+  if(worldScroll-brokenScrollStart>H+h){
+    brokenTrackState='idle';
+    nextBrokenAt=elapsed+48+Math.random()*17;
+  }
+}
     // Stronger, earlier ramp: starts calm, then becomes visibly faster every few seconds.
     // Approx speeds: 190 at start, 255 at 15s, 320 at 30s, 450 at 60s, capped at 560.
     speed=Math.min(560,190+4.35*elapsed);
