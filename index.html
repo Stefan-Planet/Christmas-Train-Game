@@ -27,7 +27,7 @@ const assetFiles={
 for(const [key,src] of Object.entries(assetFiles)){const img=new Image();img.src=src;img.onload=()=>{assets[key]=img};img.onerror=()=>console.warn('Could not load game asset:',src);}
 const laneWidth=110; // 10px white gap between 110px-wide lanes, 120px centre spacing.
 const drawAsset=(key,px,py,w,h)=>{const img=assets[key];if(img&&img.complete&&img.naturalWidth){x.drawImage(img,Math.round(px-w/2),Math.round(py-h/2),w,h);return true}return false;};function resize(){let r=c.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);c.width=r.width*d;c.height=r.height*d;x.setTransform(c.width/W,0,0,c.height/H,0,0)}new ResizeObserver(resize).observe(c);resize();const $=id=>document.getElementById(id);let mode='menu',lane=1,score=0,distance=0,speed=190,items=[],spawnTimer=0,shield=0,flash=0,last=0,combo=0,player='Driver',email='',elapsed=0,worldScroll=0;let brokenTrackState='idle',brokenLane=1,brokenTimer=0,brokenStarted=false,nextBrokenAt=Infinity,slalomQueue=[],slalomCooldown=0;
-let brokenScrollStart=0;const laneX=[180,300,420],playerY=674,hitY=642;let snow=Array.from({length:100},()=>({x:Math.random()*W,y:Math.random()*H,s:1+Math.random()*2,v:12+Math.random()*25}));let blizzardState='idle',blizzardTimer=25,blizzardTime=0,blizzardFlakes=Array.from({length:145},()=>({x:Math.random()*W,y:Math.random()*H,s:1+Math.random()*3,v:220+Math.random()*430,drift:-65+Math.random()*130}));
+let brokenScrollStart=0;const laneX=[180,300,420],playerY=674,hitY=642;let snow=Array.from({length:100},()=>({x:Math.random()*W,y:Math.random()*H,s:1+Math.random()*2,v:12+Math.random()*25}));let blizzardState='idle',blizzardTimer=25,blizzardTime=0,blizzardFlakes=Array.from({length:145},()=>({x:Math.random()*W,y:Math.random()*H,s:1+Math.random()*3,v:320+Math.random()*530,drift:-85+Math.random()*180}));
 const rect=(a,b,w,h,col)=>{x.fillStyle=col;x.fillRect(Math.round(a),Math.round(b),Math.round(w),Math.round(h))};function poly(p,col,stroke){x.beginPath();p.forEach((q,i)=>i?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]));x.closePath();x.fillStyle=col;x.fill();if(stroke){x.strokeStyle=stroke;x.lineWidth=2;x.stroke()}}
 function tree(px,py,s,lights=true){x.save();x.translate(px,py);x.scale(s,s);rect(-5,-2,10,25,'#765039');poly([[-2,-72],[-30,-22],[-17,-25],[-40,2],[40,2],[17,-25],[30,-22],[2,-72]],'#174d40','#0b382f');poly([[-1,-65],[-22,-27],[-12,-30],[0,-44],[12,-30],[22,-27]],'#d9e9df');if(lights){rect(-18,-22,4,4,'#f4d16e');rect(12,-34,4,4,'#d85b4e');rect(-3,-48,4,4,'#f4d16e')}x.restore()}
 function cabin(px,py,s){x.save();x.translate(px,py);x.scale(s,s);rect(-28,-22,56,34,'#9d5144');poly([[-34,-22],[0,-49],[34,-22]],'#4c3a39');rect(-8,-9,16,21,'#533a32');rect(-23,-12,10,10,'#f7d67b');rect(13,-12,10,10,'#f7d67b');rect(-25,-14,14,3,'#fff0c9');rect(11,-14,14,3,'#fff0c9');rect(-34,10,68,5,'#e8eee0');x.restore()}
@@ -302,25 +302,86 @@ function startBrokenTrack(){
 }
 
 function hud(){ $('score').textContent=String(score).padStart(4,'0');$('distance').textContent=Math.floor(distance)+'m';$('multi').textContent='×'+(1+Math.min(1.5,combo*.05)).toFixed(1);$('shieldHud').textContent=shield?'SHIELD ON':''}
-function reset(){lane=1;score=0;distance=0;speed=190;items=[];spawnTimer=1.15;shield=0;flash=0;combo=0;elapsed=0;worldScroll=0;brokenTrackState='idle';brokenLane=1;brokenTimer=0;brokenStarted=false;nextBrokenAt=Infinity;slalomQueue=[];slalomCooldown=0;blizzardState='idle';blizzardTimer=23+Math.random()*7;blizzardTime=0;blizzardFlakes.forEach(f=>{f.x=Math.random()*W;f.y=Math.random()*H});hud()}
+function reset(){lane=1;score=0;distance=0;speed=190;items=[];spawnTimer=1.15;shield=0;flash=0;combo=0;elapsed=0;worldScroll=0;brokenTrackState='idle';brokenLane=1;brokenTimer=0;brokenStarted=false;nextBrokenAt=Infinity;slalomQueue=[];slalomCooldown=0;blizzardState='idle';blizzardTimer=12+Math.random()*8;blizzardTime=0;blizzardFlakes.forEach(f=>{f.x=Math.random()*W;f.y=Math.random()*H});hud()}
 function start(){player=$('username').value.trim()||'Santa';email=$('email').value.trim();if(email&&!/^\S+@\S+\.\S+$/.test(email)){$('email').focus();$('email').style.borderColor='#ff7777';return}$('email').style.borderColor='';localStorage.setItem('xmasExpressProfile',JSON.stringify({name:player,email}));reset();mode='playing';['menu','leader','gameover'].forEach(id=>$(id).classList.add('hidden'));$('hud').classList.remove('hidden')}
 function finish(){if(mode!=='playing')return;mode='over';$('hud').classList.add('hidden');let data=JSON.parse(localStorage.getItem('xmasExpressScores')||'[]');data.push({name:player,score,date:Date.now()});data.sort((a,b)=>b.score-a.score);localStorage.setItem('xmasExpressScores',JSON.stringify(data.slice(0,10)));$('resultText').textContent=`${player} — final score ${score}. Presents collected: ${combo} · Distance: ${Math.floor(distance)}m.`;$('gameover').classList.remove('hidden')}
 function board(){let data=JSON.parse(localStorage.getItem('xmasExpressScores')||'[]');$('scoreRows').innerHTML=data.length?data.slice(0,10).map((r,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(r.name)}</td><td>${r.score}</td></tr>`).join(''):'<tr><td colspan="3" style="text-align:center;padding:22px">No runs yet — be the first!</td></tr>';$('leader').classList.remove('hidden');$('menu').classList.add('hidden');$('gameover').classList.add('hidden')}
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
 function move(d){if(mode!=='playing')return;let target=Math.max(0,Math.min(2,lane+d));if((brokenTrackState==='active'||brokenTrackState==='reopening')&&target===brokenLane)
 {flash=Math.max(flash,.12);return}lane=target}
+
 function drawBlizzard(){
   if(blizzardState==='idle')return;
+
   if(blizzardState==='warning'){
-    x.save();x.fillStyle='rgba(13,37,51,.72)';x.fillRect(90,112,420,58);x.strokeStyle='#e8f5f2';x.lineWidth=2;x.strokeRect(90,112,420,58);
-    x.textAlign='center';x.textBaseline='middle';x.font='20px \"Press Start 2P\", monospace';x.fillStyle='#fff4d9';x.fillText('BLIZZARD INCOMING!',300,141);x.restore();return;
+    x.save();
+    x.fillStyle='rgba(13,37,51,.82)';
+    x.fillRect(90,112,420,58);
+    x.strokeStyle='#e8f5f2';
+    x.lineWidth=2;
+    x.strokeRect(90,112,420,58);
+    x.textAlign='center';
+    x.textBaseline='middle';
+    x.font='20px "Press Start 2P", monospace';
+    x.fillStyle='#fff4d9';
+    x.fillText('BLIZZARD INCOMING!',300,141);
+    x.restore();
+    return;
   }
-  // A short whiteout: soft translucent fog bands and fast diagonal snow, while keeping lane silhouettes readable.
-  x.save();x.fillStyle='rgba(220,239,242,.15)';x.fillRect(0,0,W,H);
-  let fog=x.createLinearGradient(0,0,W,0);fog.addColorStop(0,'rgba(235,247,248,.34)');fog.addColorStop(.22,'rgba(235,247,248,.06)');fog.addColorStop(.78,'rgba(235,247,248,.06)');fog.addColorStop(1,'rgba(235,247,248,.34)');x.fillStyle=fog;x.fillRect(0,0,W,H);
-  for(let band=0;band<4;band++){let yy=((band*213+elapsed*95)%(H+160))-80;let grad=x.createLinearGradient(0,yy-55,0,yy+55);grad.addColorStop(0,'rgba(245,250,250,0)');grad.addColorStop(.5,'rgba(245,250,250,.23)');grad.addColorStop(1,'rgba(245,250,250,0)');x.fillStyle=grad;x.fillRect(0,yy-55,W,110)}
-  x.fillStyle='rgba(255,255,255,.88)';blizzardFlakes.forEach(f=>{x.fillRect(f.x,f.y,f.s,f.s*2.6)});
-  x.fillStyle='rgba(12,39,50,.68)';x.fillRect(185,116,230,43);x.strokeStyle='#fff0c6';x.lineWidth=2;x.strokeRect(185,116,230,43);x.textAlign='center';x.textBaseline='middle';x.font='15px \"Press Start 2P\", monospace';x.fillStyle='#fff4d9';x.fillText('BLIZZARD!',300,138);x.restore();
+
+  x.save();
+
+  // Dark, cold atmospheric overlay.
+  x.fillStyle='rgba(91,119,130,.32)';
+  x.fillRect(0,0,W,H);
+
+  // Irregular visibility patches.
+  for(let i=0;i<7;i++){
+    const phase=elapsed*1.7+i*2.4;
+    const yy=(i*157+elapsed*125)%(H+180)-90;
+    const strength=.12+(.18*(.5+.5*Math.sin(phase)));
+
+    const grad=x.createLinearGradient(0,yy-75,0,yy+75);
+    grad.addColorStop(0,'rgba(220,240,245,0)');
+    grad.addColorStop(.5,`rgba(220,240,245,${strength})`);
+    grad.addColorStop(1,'rgba(220,240,245,0)');
+
+    x.fillStyle=grad;
+    x.fillRect(0,yy-75,W,150);
+  }
+
+  // Dense, fast diagonal snow.
+  x.strokeStyle='rgba(235,248,250,.82)';
+  x.lineWidth=1.8;
+  x.beginPath();
+
+  blizzardFlakes.forEach(f=>{
+    x.moveTo(f.x,f.y);
+    x.lineTo(f.x-12,f.y+24);
+  });
+
+  x.stroke();
+
+  // Occasional heavy whiteout.
+  const whiteout=Math.max(0,Math.sin(elapsed*2.1)*.5+.5);
+  if(whiteout>.83){
+    x.fillStyle=`rgba(225,241,245,${(whiteout-.83)*1.7})`;
+    x.fillRect(0,0,W,H);
+  }
+
+  // Blizzard warning label.
+  x.fillStyle='rgba(12,39,50,.78)';
+  x.fillRect(185,116,230,43);
+  x.strokeStyle='#fff0c6';
+  x.lineWidth=2;
+  x.strokeRect(185,116,230,43);
+  x.textAlign='center';
+  x.textBaseline='middle';
+  x.font='15px "Press Start 2P", monospace';
+  x.fillStyle='#fff4d9';
+  x.fillText('BLIZZARD!',300,138);
+
+  x.restore();
 }
 function drawTrackAlert(){
  if(brokenTrackState==='idle')return;
@@ -342,13 +403,13 @@ function frame(t){
   if(mode==='playing'){
     elapsed+=dt;
     // From 2,000m or 90 seconds, warn the player before closing one track for 10 seconds.
-    if(brokenTrackState==='idle'&&!brokenStarted&&(distance>=2000||elapsed>=90)){
+    if(brokenTrackState==='idle'&&!brokenStarted&&(distance>=100||elapsed>=10)){
       brokenStarted=true;startBrokenTrack();
     }else if(brokenTrackState==='idle'&&brokenStarted&&elapsed>=nextBrokenAt){startBrokenTrack()}
     else if(brokenTrackState==='warning'){
       brokenTimer-=dt;
       if(brokenTimer<=0){
-        if(lane===brokenLane){finish()}
+        if(lane===brokenLane){lane=1}
         else {
           brokenTrackState='active';
 brokenTimer=10;
@@ -381,7 +442,7 @@ brokenScrollStart=worldScroll;
 }
     // Stronger, earlier ramp: starts calm, then becomes visibly faster every few seconds.
     // Approx speeds: 190 at start, 255 at 15s, 320 at 30s, 450 at 60s, capped at 560.
-    speed=Math.min(560,190+4.35*elapsed);
+   speed=190+5.5*elapsed+0.018*elapsed*elapsed;
     // Periodic blizzards: warning, then a brief low-visibility snow squall.
     if(blizzardState==='idle'){
       blizzardTimer-=dt;
@@ -392,7 +453,7 @@ brokenScrollStart=worldScroll;
     }else if(blizzardState==='active'){
       blizzardTime-=dt;
       blizzardFlakes.forEach(f=>{f.y+=f.v*dt;f.x+=f.drift*dt;if(f.y>H+8){f.y=-10;f.x=Math.random()*W}if(f.x<-10)f.x=W+8;if(f.x>W+10)f.x=-8});
-      if(blizzardTime<=0){blizzardState='idle';blizzardTimer=23+Math.random()*13}
+      if(blizzardTime<=0){blizzardState='idle';blizzardTimer=12+Math.random()*9}
     }
     // One shared world-distance drives track sleepers, scenery and every collectible/hazard.
     worldScroll+=speed*dt;
