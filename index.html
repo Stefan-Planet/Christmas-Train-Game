@@ -36,15 +36,14 @@ function drawScrollingTrack(cx) {
   const left = cx - laneWidth / 2;
 
   if (!img || !img.complete || !img.naturalWidth) {
-    // Fallback until the track artwork loads
     rect(left, 0, laneWidth, H, '#4b514d');
     return;
   }
 
-  // Preserve the original artwork's aspect ratio
-  const tileHeight = laneWidth * img.naturalHeight / img.naturalWidth;
+  // Draw the image at exactly the width of the track.
+  const tileHeight = img.naturalHeight * (laneWidth / img.naturalWidth);
 
-  // Move the repeating track downwards with the game world
+  // Scroll the repeated image downwards.
   const offset = worldScroll % tileHeight;
 
   for (let y = offset - tileHeight; y < H; y += tileHeight) {
@@ -53,11 +52,10 @@ function drawScrollingTrack(cx) {
       left,
       Math.floor(y),
       laneWidth,
-      Math.ceil(tileHeight) + 1
+      tileHeight + 1
     );
   }
 }
-
 function background(dt){
  
   // Clean white winter playfield. Three 110px tracks with exactly 10px white gaps.
@@ -165,7 +163,6 @@ function beginSlalom(){
  slalomQueue=sequence.slice();slalomCooldown=elapsed+30+Math.random()*13;
  return true;
 }
-Z
 function spawnRow(){
 
   // TRACK CLOSURE: guarantee one safe lane per obstacle row.
