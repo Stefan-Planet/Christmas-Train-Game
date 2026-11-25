@@ -1,1 +1,255 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Christmas Express</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700;800&display=swap');
+:root{--cream:#fff4d9;--gold:#ffd06e;--red:#c74346;--green:#1d5949}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% 0%,#315f68,#102b38 72%);font-family:Inter,system-ui,sans-serif;color:var(--cream);display:flex;align-items:center;justify-content:center;padding:18px}.shell{width:min(100%,620px);border:4px solid #e5b75e;border-radius:17px;background:#102f3a;box-shadow:0 18px 70px #06171dcc;overflow:hidden}.topbar{height:52px;background:#0b222c;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:2px solid #d69b48;font-size:10px;letter-spacing:1px}.brand{font:10px 'Press Start 2P';color:#ffd477}.tag{color:#9cc4bd;font-weight:800}.stage{position:relative;aspect-ratio:3/4;min-height:620px;max-height:850px;background:#a9c8c5;overflow:hidden}canvas{display:block;width:100%;height:100%;image-rendering:pixelated;touch-action:pan-y}.hud{position:absolute;inset:13px 15px auto;display:flex;justify-content:space-between;pointer-events:none}.pill{background:#0a222deF;border:2px solid #e9b85f;border-radius:8px;padding:9px 12px;min-width:105px;box-shadow:0 3px 0 #07161d}.pill small{display:block;color:#a8c9c0;font-size:8px;font-weight:800;letter-spacing:1.3px;margin-bottom:5px}.pill strong{font:15px 'Press Start 2P';color:#ffe09a}.rightstats{display:flex;gap:7px}.rightstats .pill{min-width:90px;text-align:center}.rightstats strong{font-size:12px}.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#071b25a8;padding:16px}.panel{width:min(92%,480px);background:linear-gradient(160deg,#17434a,#102c39);border:3px solid #e6b45b;border-radius:14px;padding:23px 26px;text-align:center;box-shadow:0 10px 35px #06131dcc}.eyebrow{font:9px 'Press Start 2P';color:#a9d7c6;letter-spacing:1px;line-height:1.8}.panel h1{font:clamp(19px,3vw,28px) 'Press Start 2P';color:#ffd477;line-height:1.55;margin:12px 0 8px;text-shadow:3px 3px #813c37}.panel p{color:#d2e2d8;font-size:13px;line-height:1.6;margin:10px auto 17px;max-width:370px}.field{text-align:left;margin:10px 0}.field label{display:block;font-size:10px;font-weight:800;color:#b9d9ce;letter-spacing:1px;margin:0 0 6px}.field input{width:100%;padding:11px 13px;border:2px solid #527b78;border-radius:7px;background:#0b252f;color:white;font-size:14px;outline:none}.field input:focus{border-color:#ffd477}.buttons{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin-top:16px}.btn{border:0;border-radius:7px;padding:12px 15px;background:#e6b45b;color:#1a3034;font-weight:900;cursor:pointer;box-shadow:0 4px 0 #986c35}.btn.secondary{background:#d8e6d9;box-shadow:0 4px 0 #78978b}.btn.dark{background:#315e5a;color:#fff;box-shadow:0 4px 0 #193c3b}.hint{font-size:9px!important;color:#9fc5bb!important;margin:13px 0 0!important}.hidden{display:none!important}.leaderboard{width:min(92%,520px)}.scores{width:100%;border-collapse:collapse;margin:13px 0 4px;text-align:left;font-size:12px}.scores th{color:#a9d7c6;font-size:9px;letter-spacing:1px;padding:9px;border-bottom:1px solid #527b78}.scores td{padding:9px;border-bottom:1px solid #31575a}.scores td:last-child,.scores th:last-child{text-align:right;color:#ffd477;font-weight:800}.foot{padding:11px 18px;background:#0b222c;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:#91b7ad;font-size:9px}.mobile-controls{display:none;position:absolute;bottom:12px;left:0;right:0;justify-content:space-between;padding:0 18px;pointer-events:none}.mobile-controls button{pointer-events:auto;width:52px;height:46px;border:2px solid #f6ce7d;border-radius:9px;background:#0b252fcc;color:#fff;font-size:23px}
+@media(max-width:650px){body{padding:0;align-items:flex-start}.shell{border-radius:0;width:100%;border-left:0;border-right:0}.topbar{height:43px}.brand{font-size:8px}.stage{aspect-ratio:3/4;min-height:0;max-height:none}.panel{padding:18px 15px}.mobile-controls{display:flex}.pill{padding:7px 9px;min-width:82px}.pill strong{font-size:12px}.rightstats .pill{min-width:72px}.rightstats strong{font-size:10px}.hud{inset:9px 9px auto}.foot{font-size:8px}}
+</style></head><body><div class="shell"><div class="topbar"><div class="brand">✦ CHRISTMAS EXPRESS</div><div class="tag">A FESTIVE ARCADE CONCEPT</div></div>
+<div class="stage" id="stage"><canvas id="game"></canvas><div class="hud hidden" id="hud"><div class="pill"><small>TOTAL SCORE</small><strong id="score">0000</strong></div><div class="rightstats"><div class="pill"><small>DISTANCE</small><strong id="distance">0m</strong></div><div class="pill"><small>MULTIPLIER</small><strong id="multi">×1.0</strong><small id="shieldHud" style="color:#8af0c8"></small></div></div></div>
+<div class="overlay" id="menu"><div class="panel"><div class="eyebrow">ALL ABOARD FOR ADVENTURE</div><h1>CHRISTMAS<br>EXPRESS</h1><p>Drive Santa's festive steam train through a snowy wonderland. Switch tracks, gather presents and dodge the hazards!</p><div class="field"><label>YOUR PLAYER NAME</label><input id="username" maxlength="16" placeholder="e.g. SantaStef" autocomplete="nickname"></div><div class="field"><label>EMAIL ADDRESS</label><input id="email" type="email" placeholder="you@example.com" autocomplete="email"></div><div class="buttons"><button class="btn" id="startBtn">▶ START RUN</button><button class="btn secondary" id="leaderBtn">🏆 LEADERBOARD</button></div><p class="hint">← → / A D OR SWIPE TO CHANGE TRACKS</p></div></div>
+<div class="overlay hidden" id="leader"><div class="panel leaderboard"><div class="eyebrow">THE NICE LIST</div><h1 style="font-size:20px">LEADERBOARD</h1><p>Top runs saved on this browser.</p><table class="scores"><thead><tr><th>#</th><th>DRIVER</th><th>SCORE</th></tr></thead><tbody id="scoreRows"></tbody></table><div class="buttons"><button class="btn secondary" id="leaderBack">← BACK</button></div><p class="hint">Shared online scores can be added for the final version.</p></div></div>
+<div class="overlay hidden" id="gameover"><div class="panel"><div class="eyebrow">END OF THE LINE</div><h1 style="font-size:21px">TRAIN WRECK!</h1><p id="resultText"></p><div class="buttons"><button class="btn" id="againBtn">↻ TRY AGAIN</button><button class="btn secondary" id="overBoardBtn">🏆 SCORES</button><button class="btn dark" id="homeBtn">MAIN MENU</button></div></div></div>
+<div class="mobile-controls" id="mobileControls"><button id="leftBtn">◀</button><button id="rightBtn">▶</button></div></div><div class="foot"><span>PIXEL-ART RAILWAY RUNNER · PROTOTYPE 07</span><span>COLLECT ✦ AVOID ✦ SURVIVE</span></div></div>
+<script>(()=>{
+const c=document.getElementById('game'),x=c.getContext('2d');let W=600,H=800;
+// GitHub Pages asset paths (case-sensitive).
+const assets={};
+const assetFiles={
+  track:'assets/tracks/Track-Full.jpg',
+  trackStart:'assets/tracks/Track-Start.jpg',
+  trackEnd:'assets/tracks/Track-End.jpg',
+  train:'assets/train/Train.png',
+  present:'assets/collectibles/Present.png',
+  boulder:'assets/obstacles/Boulder.png',
+  snowman:'assets/obstacles/Snowman.png',
+  tree:'assets/obstacles/Tree.png'
+};
+for(const [key,src] of Object.entries(assetFiles)){const img=new Image();img.src=src;img.onload=()=>{assets[key]=img};img.onerror=()=>console.warn('Could not load game asset:',src);}
+const laneWidth=110; // 10px white gap between 110px-wide lanes, 120px centre spacing.
+const drawAsset=(key,px,py,w,h)=>{const img=assets[key];if(img&&img.complete&&img.naturalWidth){x.drawImage(img,Math.round(px-w/2),Math.round(py-h/2),w,h);return true}return false;};function resize(){let r=c.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);c.width=r.width*d;c.height=r.height*d;x.setTransform(c.width/W,0,0,c.height/H,0,0)}new ResizeObserver(resize).observe(c);resize();const $=id=>document.getElementById(id);let mode='menu',lane=1,score=0,distance=0,speed=190,items=[],spawnTimer=0,shield=0,flash=0,last=0,combo=0,player='Driver',email='',elapsed=0,worldScroll=0;let brokenTrackState='idle',brokenLane=1,brokenTimer=0,brokenStarted=false,nextBrokenAt=Infinity,slalomQueue=[],slalomCooldown=0;const laneX=[180,300,420],playerY=674,hitY=642;let snow=Array.from({length:100},()=>({x:Math.random()*W,y:Math.random()*H,s:1+Math.random()*2,v:12+Math.random()*25}));let blizzardState='idle',blizzardTimer=25,blizzardTime=0,blizzardFlakes=Array.from({length:145},()=>({x:Math.random()*W,y:Math.random()*H,s:1+Math.random()*3,v:220+Math.random()*430,drift:-65+Math.random()*130}));
+const rect=(a,b,w,h,col)=>{x.fillStyle=col;x.fillRect(Math.round(a),Math.round(b),Math.round(w),Math.round(h))};function poly(p,col,stroke){x.beginPath();p.forEach((q,i)=>i?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]));x.closePath();x.fillStyle=col;x.fill();if(stroke){x.strokeStyle=stroke;x.lineWidth=2;x.stroke()}}
+function tree(px,py,s,lights=true){x.save();x.translate(px,py);x.scale(s,s);rect(-5,-2,10,25,'#765039');poly([[-2,-72],[-30,-22],[-17,-25],[-40,2],[40,2],[17,-25],[30,-22],[2,-72]],'#174d40','#0b382f');poly([[-1,-65],[-22,-27],[-12,-30],[0,-44],[12,-30],[22,-27]],'#d9e9df');if(lights){rect(-18,-22,4,4,'#f4d16e');rect(12,-34,4,4,'#d85b4e');rect(-3,-48,4,4,'#f4d16e')}x.restore()}
+function cabin(px,py,s){x.save();x.translate(px,py);x.scale(s,s);rect(-28,-22,56,34,'#9d5144');poly([[-34,-22],[0,-49],[34,-22]],'#4c3a39');rect(-8,-9,16,21,'#533a32');rect(-23,-12,10,10,'#f7d67b');rect(13,-12,10,10,'#f7d67b');rect(-25,-14,14,3,'#fff0c9');rect(11,-14,14,3,'#fff0c9');rect(-34,10,68,5,'#e8eee0');x.restore()}
+function background(dt){
+  // Clean white winter playfield. Three 110px tracks with exactly 10px white gaps.
+  rect(0,0,W,H,'#ffffff');
+  for(let k=0;k<3;k++){
+    const cx=laneX[k],left=cx-laneWidth/2,closed=(brokenTrackState==='active'&&k===brokenLane);
+    if(!closed){
+      // Full track artwork is scaled to the lane width and full playfield height.
+      if(!drawAsset('track',cx,H/2,laneWidth,H)){
+        rect(left,0,laneWidth,H,'#4b514d');
+        for(let yy=(worldScroll%72)-72;yy<H;yy+=72){
+          rect(left+5,yy,laneWidth-10,7,'#493d34');
+          rect(left+7,yy+1,laneWidth-14,2,'#a18a68');
+        }
+        rect(left+12,0,5,H,'#c6c9bb');rect(left+laneWidth-17,0,5,H,'#c6c9bb');
+      }
+    }else{
+      // A closed outer lane has a white gap between the supplied far and near track-end pieces.
+      rect(left,0,laneWidth,H,'#ffffff');
+      const topImg=assets.trackStart,bottomImg=assets.trackEnd;
+      if(topImg&&topImg.complete&&topImg.naturalWidth){
+        const h=Math.min(170,laneWidth*topImg.naturalHeight/topImg.naturalWidth);
+        x.drawImage(topImg,left,0,laneWidth,h);
+      }
+      if(bottomImg&&bottomImg.complete&&bottomImg.naturalWidth){
+        const h=Math.min(170,laneWidth*bottomImg.naturalHeight/bottomImg.naturalWidth);
+        x.drawImage(bottomImg,left,H-h,laneWidth,h);
+      }
+      // A clear closure label remains visible even if the supplied artwork is subtle.
+      x.save();x.fillStyle='rgba(255,255,255,.88)';x.fillRect(cx-42,H*.48-17,84,34);
+      x.strokeStyle='#b83d3d';x.lineWidth=2;x.strokeRect(cx-42,H*.48-17,84,34);
+      x.fillStyle='#8f2929';x.textAlign='center';x.textBaseline='middle';x.font='bold 11px Inter,sans-serif';x.fillText('NO TRACK',cx,H*.48);x.restore();
+    }
+  }
+  // Track closure warning highlights the lane that is about to close.
+  if(brokenTrackState==='warning'){
+    const cx=laneX[brokenLane],blink=Math.floor(elapsed*5)%2===0;
+    x.save();x.fillStyle='rgba(255,190,70,.16)';x.fillRect(cx-laneWidth/2,0,laneWidth,H);
+    x.fillStyle=blink?'#f2c45e':'#b8443f';x.fillRect(cx-48,286,96,48);
+    x.strokeStyle='#fff0c8';x.lineWidth=3;x.strokeRect(cx-48,286,96,48);
+    x.fillStyle='#243b3b';x.textAlign='center';x.textBaseline='middle';x.font='bold 12px Inter,sans-serif';
+    x.fillText('TRACK',cx,301);x.fillText('OUT AHEAD',cx,318);x.restore();
+  }
+}
+function present(px,py){
+  if(drawAsset('present',px,py,46,46))return;
+  x.save();x.translate(px,py);poly([[-22,-9],[0,-21],[22,-9],[0,3]],'#f1d16f','#805b35');poly([[-22,-9],[0,3],[0,29],[-22,17]],'#b93643','#712d35');poly([[0,3],[22,-9],[22,17],[0,29]],'#d94d4c','#712d35');rect(-4,-19,8,47,'#f8e8a6');rect(-22,-3,44,7,'#f8e8a6');poly([[-8,-22],[-15,-29],[-5,-30],[0,-23],[5,-30],[15,-29],[8,-22]],'#f4d06d');x.restore();
+}
+function obstacle(o){
+  const px=laneX[o.lane],py=o.y;
+  const spriteKey=o.type==='snowman'?'snowman':o.type==='tree'?'tree':'boulder';
+  const dimensions=o.type==='snowman'?[66,82]:o.type==='tree'?[76,100]:[82,66];
+  if(drawAsset(spriteKey,px,py,dimensions[0],dimensions[1]))return;
+  x.save();x.translate(px,py);
+  if(o.type==='snowman'){
+    x.fillStyle='#dfece7';x.beginPath();x.arc(0,12,20,0,Math.PI*2);x.fill();x.beginPath();x.arc(0,-13,15,0,Math.PI*2);x.fill();x.beginPath();x.arc(0,-34,11,0,Math.PI*2);x.fill();
+    rect(-13,-48,26,5,'#bd3f45');rect(-9,-59,18,13,'#273d43');rect(-7,-37,3,3,'#172d34');rect(4,-37,3,3,'#172d34');poly([[0,-31],[14,-28],[0,-25]],'#e58b42');rect(-14,-4,28,5,'#b83d42');
+  }else if(o.type==='tree'){
+    poly([[-29,20],[0,-47],[29,20]],'#14533f','#0b382e');poly([[-24,1],[0,-61],[24,1]],'#1d7150');poly([[-18,-16],[0,-70],[18,-16]],'#27805a');rect(-6,17,12,12,'#765039');
+  }else{
+    poly([[-36,15],[-25,-13],[-4,-26],[20,-17],[37,8],[24,23],[-20,23]],'#59615e','#303b3a');poly([[-25,-13],[-4,-26],[20,-17],[12,-8],[-13,-5]],'#aebbb5');
+  }
+  x.restore();
+}
+function shieldItem(px,py){x.save();x.translate(px,py);poly([[0,-27],[22,-17],[18,11],[0,27],[-18,11],[-22,-17]],'#f2ce68','#fff0b6');rect(-3,-17,6,34,'#c13e46');rect(-15,-3,30,6,'#c13e46');x.restore()}
+function drawItem(o){let px=laneX[o.lane],py=o.y;if(o.kind==='present')present(px,py);else if(o.kind==='obstacle')obstacle(o);else shieldItem(px,py)}
+function train(){
+  const px=laneX[lane],py=playerY;
+  x.save();if(flash>0&&Math.floor(flash*14)%2===0)x.globalAlpha=.5;
+  if(!drawAsset('train',px,py,110,146)){
+    x.translate(px,py);poly([[-52,22],[6,2],[57,22],[0,48]],'#344744');
+    poly([[-39,-50],[6,-69],[51,-48],[8,-27]],'#b73c42','#68282f');poly([[-39,-50],[8,-27],[8,20],[-39,-2]],'#8f3039','#57242b');poly([[8,-27],[51,-48],[51,-4],[8,20]],'#c94b47','#702b32');
+    poly([[-40,-51],[4,-75],[54,-53],[8,-28]],'#e8eee0');poly([[-32,-53],[4,-71],[45,-53],[8,-34]],'#28584d');
+    poly([[-28,-58],[-9,-48],[-9,-68],[-28,-78]],'#8ec6c2','#173c3a');poly([[17,-43],[38,-54],[38,-72],[17,-61]],'#8ec6c2','#173c3a');
+    rect(-5,-12,12,12,'#e5bd65');rect(-2,-9,6,6,'#f7e2a0');rect(34,-81,13,9,'#263c3c');rect(31,-83,19,4,'#d4aa5a');
+    rect(-12,19,27,5,'#d4b36c');rect(-2,22,7,9,'#333f3d');
+  }
+  x.restore();
+}
+function spawnSlalomRow(){
+ const safeLane=slalomQueue.shift();
+ const available=[0,1,2].filter(l=>!(brokenTrackState==='active'&&l===brokenLane));
+ available.filter(l=>l!==safeLane).forEach(l=>items.push({kind:'obstacle',type:['boulder','snowman','tree'][Math.floor(Math.random()*3)],lane:l,y:-72,done:false}));
+ // A short gift trail on the only safe lane makes the route feel rewarding.
+ if(Math.random()<.78)items.push({kind:'present',lane:safeLane,y:-72,done:false});
+}
+function beginSlalom(){
+ const available=[0,1,2].filter(l=>!(brokenTrackState==='active'&&l===brokenLane));
+ if(available.length<2)return false;
+ let sequence;
+ if(available.length===2){sequence=[available[0],available[1],available[0],available[1],available[0]]}
+ else {sequence=Math.random()<.5?[0,1,2,1,0]:[2,1,0,1,2]}
+ slalomQueue=sequence.slice();slalomCooldown=elapsed+30+Math.random()*13;
+ return true;
+}
+function spawnRow(){
+ // Slaloms are authored sequences, not unrelated random rows. Each next safe lane
+ // is adjacent to the previous one, so the player can switch in time.
+ if(slalomQueue.length){spawnSlalomRow();return}
+ if(elapsed>=48&&distance>=900&&elapsed>=slalomCooldown&&Math.random()<.27&&beginSlalom()){
+   spawnSlalomRow();return;
+ }
+ const lanes=[0,1,2];
+ let available=lanes.filter(l=>!(brokenTrackState==='active'&&l===brokenLane));
+ if(available.length<2)return;
+ // A broken lane is already blocked, so only block one of the two remaining lanes.
+ let obstacleCount=available.length===2?1:(Math.random()<Math.min(.94,.12+elapsed*.018)?2:1);
+ let blocked=[];
+ while(blocked.length<obstacleCount){let l=available[Math.floor(Math.random()*available.length)];if(!blocked.includes(l))blocked.push(l)}
+ let safe=available.filter(n=>!blocked.includes(n));
+ blocked.forEach(l=>items.push({kind:'obstacle',type:['boulder','snowman','tree'][Math.floor(Math.random()*3)],lane:l,y:-72,done:false}));
+ if(Math.random()<.82&&safe.length){let giftLane=safe[Math.floor(Math.random()*safe.length)];items.push({kind:'present',lane:giftLane,y:-72,done:false})}
+}
+function startBrokenTrack(){
+ // Only an outer track may fail: this always leaves two adjacent tracks open.
+ brokenLane=Math.random()<.5?0:2;brokenTrackState='warning';brokenTimer=3.4;
+}
 
+function hud(){ $('score').textContent=String(score).padStart(4,'0');$('distance').textContent=Math.floor(distance)+'m';$('multi').textContent='×'+(1+Math.min(1.5,combo*.05)).toFixed(1);$('shieldHud').textContent=shield?'SHIELD ON':''}
+function reset(){lane=1;score=0;distance=0;speed=190;items=[];spawnTimer=1.15;shield=0;flash=0;combo=0;elapsed=0;worldScroll=0;brokenTrackState='idle';brokenLane=1;brokenTimer=0;brokenStarted=false;nextBrokenAt=Infinity;slalomQueue=[];slalomCooldown=0;blizzardState='idle';blizzardTimer=23+Math.random()*7;blizzardTime=0;blizzardFlakes.forEach(f=>{f.x=Math.random()*W;f.y=Math.random()*H});hud()}
+function start(){player=$('username').value.trim()||'Santa';email=$('email').value.trim();if(email&&!/^\S+@\S+\.\S+$/.test(email)){$('email').focus();$('email').style.borderColor='#ff7777';return}$('email').style.borderColor='';localStorage.setItem('xmasExpressProfile',JSON.stringify({name:player,email}));reset();mode='playing';['menu','leader','gameover'].forEach(id=>$(id).classList.add('hidden'));$('hud').classList.remove('hidden')}
+function finish(){if(mode!=='playing')return;mode='over';$('hud').classList.add('hidden');let data=JSON.parse(localStorage.getItem('xmasExpressScores')||'[]');data.push({name:player,score,date:Date.now()});data.sort((a,b)=>b.score-a.score);localStorage.setItem('xmasExpressScores',JSON.stringify(data.slice(0,10)));$('resultText').textContent=`${player} — final score ${score}. Presents collected: ${combo} · Distance: ${Math.floor(distance)}m.`;$('gameover').classList.remove('hidden')}
+function board(){let data=JSON.parse(localStorage.getItem('xmasExpressScores')||'[]');$('scoreRows').innerHTML=data.length?data.slice(0,10).map((r,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(r.name)}</td><td>${r.score}</td></tr>`).join(''):'<tr><td colspan="3" style="text-align:center;padding:22px">No runs yet — be the first!</td></tr>';$('leader').classList.remove('hidden');$('menu').classList.add('hidden');$('gameover').classList.add('hidden')}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
+function move(d){if(mode!=='playing')return;let target=Math.max(0,Math.min(2,lane+d));if(brokenTrackState==='active'&&target===brokenLane){flash=Math.max(flash,.12);return}lane=target}
+function drawBlizzard(){
+  if(blizzardState==='idle')return;
+  if(blizzardState==='warning'){
+    x.save();x.fillStyle='rgba(13,37,51,.72)';x.fillRect(90,112,420,58);x.strokeStyle='#e8f5f2';x.lineWidth=2;x.strokeRect(90,112,420,58);
+    x.textAlign='center';x.textBaseline='middle';x.font='20px \"Press Start 2P\", monospace';x.fillStyle='#fff4d9';x.fillText('BLIZZARD INCOMING!',300,141);x.restore();return;
+  }
+  // A short whiteout: soft translucent fog bands and fast diagonal snow, while keeping lane silhouettes readable.
+  x.save();x.fillStyle='rgba(220,239,242,.15)';x.fillRect(0,0,W,H);
+  let fog=x.createLinearGradient(0,0,W,0);fog.addColorStop(0,'rgba(235,247,248,.34)');fog.addColorStop(.22,'rgba(235,247,248,.06)');fog.addColorStop(.78,'rgba(235,247,248,.06)');fog.addColorStop(1,'rgba(235,247,248,.34)');x.fillStyle=fog;x.fillRect(0,0,W,H);
+  for(let band=0;band<4;band++){let yy=((band*213+elapsed*95)%(H+160))-80;let grad=x.createLinearGradient(0,yy-55,0,yy+55);grad.addColorStop(0,'rgba(245,250,250,0)');grad.addColorStop(.5,'rgba(245,250,250,.23)');grad.addColorStop(1,'rgba(245,250,250,0)');x.fillStyle=grad;x.fillRect(0,yy-55,W,110)}
+  x.fillStyle='rgba(255,255,255,.88)';blizzardFlakes.forEach(f=>{x.fillRect(f.x,f.y,f.s,f.s*2.6)});
+  x.fillStyle='rgba(12,39,50,.68)';x.fillRect(185,116,230,43);x.strokeStyle='#fff0c6';x.lineWidth=2;x.strokeRect(185,116,230,43);x.textAlign='center';x.textBaseline='middle';x.font='15px \"Press Start 2P\", monospace';x.fillStyle='#fff4d9';x.fillText('BLIZZARD!',300,138);x.restore();
+}
+function drawTrackAlert(){
+ if(brokenTrackState==='idle')return;
+ x.save();
+ if(brokenTrackState==='warning'){
+   x.fillStyle='rgba(93,27,24,.92)';x.fillRect(76,183,448,54);x.strokeStyle='#f5cf78';x.lineWidth=3;x.strokeRect(76,183,448,54);
+   x.textAlign='center';x.textBaseline='middle';x.font='16px "Press Start 2P", monospace';x.fillStyle='#fff2c8';x.fillText('TRACK OUT AHEAD!',300,210);
+   x.font='bold 12px Inter,sans-serif';x.fillStyle='#ffe4a0';x.fillText('SWITCH TRACKS NOW',300,258);
+ }else{
+   x.fillStyle='rgba(94,25,26,.88)';x.fillRect(110,183,380,47);x.strokeStyle='#f5cf78';x.lineWidth=2;x.strokeRect(110,183,380,47);
+   x.textAlign='center';x.textBaseline='middle';x.font='13px "Press Start 2P", monospace';x.fillStyle='#fff2c8';x.fillText('TRACK CLOSED',300,206);
+   x.font='bold 11px Inter,sans-serif';x.fillStyle='#ffe4a0';x.fillText(Math.ceil(brokenTimer)+'s UNTIL REOPENING',300,248);
+ }
+ x.restore();
+}
+function draw(){background(1/60);if(mode==='playing')drawTrackAlert();if(mode==='playing'||mode==='over'){items.slice().sort((a,b)=>a.y-b.y).forEach(drawItem);train();if(mode==='playing')drawBlizzard()}else{present(laneX[0],390);present(laneX[2],300);train()}}
+function frame(t){
+  let dt=Math.min((t-last)/1000||0,.04);last=t;
+  if(mode==='playing'){
+    elapsed+=dt;
+    // From 2,000m or 90 seconds, warn the player before closing one track for 15 seconds.
+    if(brokenTrackState==='idle'&&!brokenStarted&&(distance>=2000||elapsed>=90)){
+      brokenStarted=true;startBrokenTrack();
+    }else if(brokenTrackState==='idle'&&brokenStarted&&elapsed>=nextBrokenAt){startBrokenTrack()}
+    else if(brokenTrackState==='warning'){
+      brokenTimer-=dt;
+      if(brokenTimer<=0){
+        if(lane===brokenLane){finish()}
+        else {
+          brokenTrackState='active';brokenTimer=15;
+          // Remove hazards already in flight so the two surviving adjacent tracks
+          // cannot inherit a double-blocked row as the closure begins.
+          items=items.filter(o=>o.kind!=='obstacle');
+          slalomQueue=[];
+        }
+      }
+    }else if(brokenTrackState==='active'){
+      brokenTimer-=dt;
+      if(brokenTimer<=0){brokenTrackState='idle';brokenTimer=0;nextBrokenAt=elapsed+48+Math.random()*17;}
+    }
+    // Stronger, earlier ramp: starts calm, then becomes visibly faster every few seconds.
+    // Approx speeds: 190 at start, 255 at 15s, 320 at 30s, 450 at 60s, capped at 560.
+    speed=Math.min(560,190+4.35*elapsed);
+    // Periodic blizzards: warning, then a brief low-visibility snow squall.
+    if(blizzardState==='idle'){
+      blizzardTimer-=dt;
+      if(blizzardTimer<=0){blizzardState='warning';blizzardTime=2.6}
+    }else if(blizzardState==='warning'){
+      blizzardTime-=dt;
+      if(blizzardTime<=0){blizzardState='active';blizzardTime=6.5}
+    }else if(blizzardState==='active'){
+      blizzardTime-=dt;
+      blizzardFlakes.forEach(f=>{f.y+=f.v*dt;f.x+=f.drift*dt;if(f.y>H+8){f.y=-10;f.x=Math.random()*W}if(f.x<-10)f.x=W+8;if(f.x>W+10)f.x=-8});
+      if(blizzardTime<=0){blizzardState='idle';blizzardTimer=23+Math.random()*13}
+    }
+    // One shared world-distance drives track sleepers, scenery and every collectible/hazard.
+    worldScroll+=speed*dt;
+    distance+=speed*dt/24;
+    spawnTimer-=dt;
+    if(spawnTimer<=0){spawnRow();let ramp=Math.min(1,elapsed/55);spawnTimer=slalomQueue.length?Math.max(.98,1.22-ramp*.12):1.38-ramp*.55;}
+    for(let o of items){
+      let previousY=o.y;
+      o.y+=speed*dt;
+      // Detect crossing the collection/collision line, not a narrow timing window.
+      if(!o.done&&previousY<hitY&&o.y>=hitY){
+        o.done=true;
+        if(o.lane===lane){
+          if(o.kind==='present'){combo++}
+          else if(o.kind==='shield'){shield=1}
+          else if(o.kind==='obstacle'){
+            if(shield){shield=0;flash=.9}
+            else if(flash<=0){finish()}
+          }
+        }
+      }
+    }
+    items=items.filter(o=>o.y<H+85&&!o.done);
+    flash=Math.max(0,flash-dt);
+    let multiplier=1+Math.min(2,Math.floor(combo/5)*.25);
+    score=Math.floor(distance*2+combo*100*multiplier);
+    hud();
+  }
+  draw();requestAnimationFrame(frame)
+}
+requestAnimationFrame(frame);
+document.addEventListener('keydown',e=>{const target=e.target;const typing=target&&(target.tagName==='INPUT'||target.tagName==='TEXTAREA'||target.isContentEditable);if(typing)return;if(['ArrowLeft','ArrowRight','a','A','d','D'].includes(e.key)&&mode==='playing'){e.preventDefault();move(e.key==='ArrowLeft'||e.key==='a'||e.key==='A'?-1:1)}if(e.key==='Enter'&&mode==='menu'&&!typing)start()});$('startBtn').onclick=start;$('leaderBtn').onclick=board;$('leaderBack').onclick=()=>{$('leader').classList.add('hidden');$('menu').classList.remove('hidden')};$('againBtn').onclick=start;$('overBoardBtn').onclick=board;$('homeBtn').onclick=()=>{$('gameover').classList.add('hidden');$('menu').classList.remove('hidden');$('hud').classList.add('hidden');mode='menu'};$('leftBtn').onclick=()=>move(-1);$('rightBtn').onclick=()=>move(1);let tx=null,ty=null;c.addEventListener('touchstart',e=>{tx=e.changedTouches[0].clientX;ty=e.changedTouches[0].clientY},{passive:true});c.addEventListener('touchend',e=>{if(tx===null)return;let dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;if(Math.abs(dx)>24&&Math.abs(dx)>Math.abs(dy))move(dx<0?-1:1);tx=ty=null},{passive:true});
+})();</script></body></html>
