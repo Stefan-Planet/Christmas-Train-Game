@@ -20,6 +20,7 @@ const assetFiles={
   trackEnd:'assets/tracks/Track-End.jpg',
   trackClosed:'assets/tracks/Track-Closed.jpg',
   train:'assets/train/Train.png',
+  trainShield:'assets/train/Train-Shield.png',
   present:'assets/collectibles/Present.png',
   shield:'assets/collectibles/Shield.png',
   boulder:'assets/obstacles/Boulder.png',
@@ -220,7 +221,7 @@ function drawItem(o){let px=laneX[o.lane],py=o.y;if(o.kind==='present')present(p
 function train(){
   const px=laneX[lane],py=playerY;
   x.save();if(flash>0&&Math.floor(flash*14)%2===0)x.globalAlpha=.5;
-  if(!drawAsset('train',px,py,110,146)){
+  if(!drawAsset(shield ? 'trainShield' : 'train',px,py,110,146)){
     x.translate(px,py);poly([[-52,22],[6,2],[57,22],[0,48]],'#344744');
     poly([[-39,-50],[6,-69],[51,-48],[8,-27]],'#b73c42','#68282f');poly([[-39,-50],[8,-27],[8,20],[-39,-2]],'#8f3039','#57242b');poly([[8,-27],[51,-48],[51,-4],[8,20]],'#c94b47','#702b32');
     poly([[-40,-51],[4,-75],[54,-53],[8,-28]],'#e8eee0');poly([[-32,-53],[4,-71],[45,-53],[8,-34]],'#28584d');
@@ -233,8 +234,8 @@ function train(){
 function spawnCollectible(lane,presentChance){
   const roll=Math.random();
 
-  // Rare shield: 4% chance per spawn row.
-  if(roll<0.04){
+  // Rare shield: 2% chance per spawn row.
+  if(!shield && roll<0.02){
     items.push({
       kind:'shield',
       lane,
