@@ -49,6 +49,7 @@ function drawScrollingTrack(cx) {
   }
 }
 
+
 function background(dt){
   rect(0,0,W,H,'#ffffff');
 
@@ -59,7 +60,6 @@ function background(dt){
     const reopening=brokenTrackState==='reopening'&&k===brokenLane;
 
     if(closed){
-      // The lane is white, with the final track-end section scrolling down.
       const endImg=assets.trackEnd;
       const progress=worldScroll-brokenScrollStart;
       const h=endImg&&endImg.complete&&endImg.naturalWidth
@@ -69,7 +69,10 @@ function background(dt){
       const endY=H*0.45+progress;
       const endTop=endY-h;
 
-      // Keep normal track above the end of the railway.
+      // Snow-covered ground fills the closed section.
+      rect(left,0,laneWidth,H,'#edf6f4');
+
+      // Keep the normal track visible above the track end.
       if(endTop>0){
         x.save();
         x.beginPath();
@@ -79,54 +82,59 @@ function background(dt){
         x.restore();
       }
 
-      // Draw the moving Track-End.
+      // Draw the moving end of the railway.
       if(endImg&&endImg.complete&&endImg.naturalWidth&&endY>0&&endTop<H){
         x.drawImage(endImg,left,Math.floor(endTop),laneWidth,h);
       }
 
-      // Everything below the end is simply the white background.
+      // Subtle snow detail in the exposed section.
+      x.save();
+      x.beginPath();
+      x.rect(left,Math.max(0,endY),laneWidth,Math.max(0,H-endY));
+      x.clip();
+
+      for(let sy=0;sy<H;sy+=37){
+        for(let sx=0;sx<laneWidth;sx+=29){
+          rect(left+sx+((sy/37)%2)*11,sy,3,3,'#d7e9e6');
+        }
+      }
+      x.restore();
+
       continue;
     }
 
-   if(reopening){
-  const startImg=assets.trackStart;
-  const progress=worldScroll-brokenScrollStart;
-
-  // Keep the lane white while the new track-start section approaches.
-  if(startImg&&startImg.complete&&startImg.naturalWidth){
-    const h=laneWidth*startImg.naturalHeight/startImg.naturalWidth;
-    const startY=-h+progress;
-
-    if(startY<H&&startY+h>0){
-      x.drawImage(startImg,left,Math.floor(startY),laneWidth,h);
-    }
-
-    // Resume normal tiles only once Track-Start has passed.
     if(reopening){
-  const startImg=assets.trackStart;
-  const progress=worldScroll-brokenScrollStart;
+      const startImg=assets.trackStart;
+      const progress=worldScroll-brokenScrollStart;
 
-  if(startImg&&startImg.complete&&startImg.naturalWidth){
-    const h=laneWidth*startImg.naturalHeight/startImg.naturalWidth;
-    const startY=-h+progress;
+      // Keep the lane snow-covered while the track returns.
+      rect(left,0,laneWidth,H,'#edf6f4');
 
-    // Keep the lane white until Track-Start reaches the bottom.
-    if(startY<H&&startY+h>0){
-      x.drawImage(startImg,left,Math.floor(startY),laneWidth,h);
+      if(startImg&&startImg.complete&&startImg.naturalWidth){
+        const h=laneWidth*startImg.naturalHeight/startImg.naturalWidth;
+        const startY=-h+progress;
+        const startBottom=startY+h;
+
+        // Draw the returning track-start section.
+        if(startY<H&&startBottom>0){
+          x.drawImage(startImg,left,Math.floor(startY),laneWidth,h);
+        }
+
+        // Normal track follows underneath the returning section.
+        if(startBottom<H){
+          x.save();
+          x.beginPath();
+          x.rect(left,Math.max(0,startBottom),laneWidth,H-Math.max(0,startBottom));
+          x.clip();
+          drawScrollingTrack(cx);
+          x.restore();
+        }
+      }
+
+      continue;
     }
 
-    // Restore normal track once Track-Start has completely passed.
-    if(startY>=H){
-      drawScrollingTrack(cx);
-    }
-  }
-}else{
-  drawScrollingTrack(cx);
-}
-  }
-}else{
-  drawScrollingTrack(cx);
-}
+    drawScrollingTrack(cx);
   }
 
   // Track closure warning.
@@ -151,6 +159,7 @@ function background(dt){
     x.restore();
   }
 }
+
 
 function present(px,py){
   if(drawAsset('present',px,py,46,46))return;
@@ -431,16 +440,13 @@ function frame(t){
     else if(brokenTrackState==='warning'){
       brokenTimer-=dt;
       if(brokenTimer<=0){
-        if(lane===brokenLane){lane=1}
-        else {
-          brokenTrackState='active';
+        brokenTrackState='active';
 brokenTimer=10;
 brokenScrollStart=worldScroll;
-          // Remove hazards already in flight so the two surviving adjacent tracks
-          // cannot inherit a double-blocked row as the closure begins.
-          items=items.filter(o=>o.kind!=='obstacle');
-          slalomQueue=[];
-        }
+
+// Remove hazards already in flight as the closure begins.
+items=items.filter(o=>o.kind!=='obstacle');
+slalomQueue=[];
       }
     }else if(brokenTrackState==='active'){
   brokenTimer-=dt;
@@ -498,7 +504,7 @@ brokenScrollStart=worldScroll;
         }
       }
     }
-    items=items.filter(o=>o.y<H+85&&!o.done);
+    items=items.filter(o=>o.y<H+100);
     flash=Math.max(0,flash-dt);
     let multiplier=1+Math.min(2,Math.floor(combo/5)*.25);
     score=Math.floor(distance*2+combo*100*multiplier);
