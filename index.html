@@ -30,39 +30,80 @@ const drawAsset=(key,px,py,w,h)=>{const img=assets[key];if(img&&img.complete&&im
 const rect=(a,b,w,h,col)=>{x.fillStyle=col;x.fillRect(Math.round(a),Math.round(b),Math.round(w),Math.round(h))};function poly(p,col,stroke){x.beginPath();p.forEach((q,i)=>i?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]));x.closePath();x.fillStyle=col;x.fill();if(stroke){x.strokeStyle=stroke;x.lineWidth=2;x.stroke()}}
 function tree(px,py,s,lights=true){x.save();x.translate(px,py);x.scale(s,s);rect(-5,-2,10,25,'#765039');poly([[-2,-72],[-30,-22],[-17,-25],[-40,2],[40,2],[17,-25],[30,-22],[2,-72]],'#174d40','#0b382f');poly([[-1,-65],[-22,-27],[-12,-30],[0,-44],[12,-30],[22,-27]],'#d9e9df');if(lights){rect(-18,-22,4,4,'#f4d16e');rect(12,-34,4,4,'#d85b4e');rect(-3,-48,4,4,'#f4d16e')}x.restore()}
 function cabin(px,py,s){x.save();x.translate(px,py);x.scale(s,s);rect(-28,-22,56,34,'#9d5144');poly([[-34,-22],[0,-49],[34,-22]],'#4c3a39');rect(-8,-9,16,21,'#533a32');rect(-23,-12,10,10,'#f7d67b');rect(13,-12,10,10,'#f7d67b');rect(-25,-14,14,3,'#fff0c9');rect(11,-14,14,3,'#fff0c9');rect(-34,10,68,5,'#e8eee0');x.restore()}
+
+function drawScrollingTrack(cx) {
+  const img = assets.track;
+  const left = cx - laneWidth / 2;
+
+  if (!img || !img.complete || !img.naturalWidth) {
+    // Fallback until the track artwork loads
+    rect(left, 0, laneWidth, H, '#4b514d');
+    return;
+  }
+
+  // Preserve the original artwork's aspect ratio
+  const tileHeight = laneWidth * img.naturalHeight / img.naturalWidth;
+
+  // Move the repeating track downwards with the game world
+  const offset = worldScroll % tileHeight;
+
+  for (let y = offset - tileHeight; y < H; y += tileHeight) {
+    x.drawImage(
+      img,
+      left,
+      Math.floor(y),
+      laneWidth,
+      Math.ceil(tileHeight) + 1
+    );
+  }
+}
+
 function background(dt){
+ 
   // Clean white winter playfield. Three 110px tracks with exactly 10px white gaps.
   rect(0,0,W,H,'#ffffff');
+
   for(let k=0;k<3;k++){
     const cx=laneX[k],left=cx-laneWidth/2,closed=(brokenTrackState==='active'&&k===brokenLane);
+
     if(!closed){
-      // Full track artwork is scaled to the lane width and full playfield height.
-      if(!drawAsset('track',cx,H/2,laneWidth,H)){
-        rect(left,0,laneWidth,H,'#4b514d');
-        for(let yy=(worldScroll%72)-72;yy<H;yy+=72){
-          rect(left+5,yy,laneWidth-10,7,'#493d34');
-          rect(left+7,yy+1,laneWidth-14,2,'#a18a68');
-        }
-        rect(left+12,0,5,H,'#c6c9bb');rect(left+laneWidth-17,0,5,H,'#c6c9bb');
-      }
+
+      // Vertically tiled, scrolling track artwork.
+      drawScrollingTrack(cx);
+
     }else{
+
       // A closed outer lane has a white gap between the supplied far and near track-end pieces.
       rect(left,0,laneWidth,H,'#ffffff');
+
       const topImg=assets.trackStart,bottomImg=assets.trackEnd;
+
       if(topImg&&topImg.complete&&topImg.naturalWidth){
         const h=Math.min(170,laneWidth*topImg.naturalHeight/topImg.naturalWidth);
         x.drawImage(topImg,left,0,laneWidth,h);
       }
+
       if(bottomImg&&bottomImg.complete&&bottomImg.naturalWidth){
         const h=Math.min(170,laneWidth*bottomImg.naturalHeight/bottomImg.naturalWidth);
         x.drawImage(bottomImg,left,H-h,laneWidth,h);
       }
+
       // A clear closure label remains visible even if the supplied artwork is subtle.
-      x.save();x.fillStyle='rgba(255,255,255,.88)';x.fillRect(cx-42,H*.48-17,84,34);
-      x.strokeStyle='#b83d3d';x.lineWidth=2;x.strokeRect(cx-42,H*.48-17,84,34);
-      x.fillStyle='#8f2929';x.textAlign='center';x.textBaseline='middle';x.font='bold 11px Inter,sans-serif';x.fillText('NO TRACK',cx,H*.48);x.restore();
+      x.save();
+      x.fillStyle='rgba(255,255,255,.88)';
+      x.fillRect(cx-42,H*.48-17,84,34);
+      x.strokeStyle='#b83d3d';
+      x.lineWidth=2;
+      x.strokeRect(cx-42,H*.48-17,84,34);
+      x.fillStyle='#8f2929';
+      x.textAlign='center';
+      x.textBaseline='middle';
+      x.font='bold 11px Inter,sans-serif';
+      x.fillText('NO TRACK',cx,H*.48);
+      x.restore();
     }
   }
+
   // Track closure warning highlights the lane that is about to close.
   if(brokenTrackState==='warning'){
     const cx=laneX[brokenLane],blink=Math.floor(elapsed*5)%2===0;
@@ -124,27 +165,125 @@ function beginSlalom(){
  slalomQueue=sequence.slice();slalomCooldown=elapsed+30+Math.random()*13;
  return true;
 }
+Z
 function spawnRow(){
- // Slaloms are authored sequences, not unrelated random rows. Each next safe lane
- // is adjacent to the previous one, so the player can switch in time.
- if(slalomQueue.length){spawnSlalomRow();return}
- if(elapsed>=48&&distance>=900&&elapsed>=slalomCooldown&&Math.random()<.27&&beginSlalom()){
-   spawnSlalomRow();return;
- }
- const lanes=[0,1,2];
- let available=lanes.filter(l=>!(brokenTrackState==='active'&&l===brokenLane));
- if(available.length<2)return;
- // A broken lane is already blocked, so only block one of the two remaining lanes.
- let obstacleCount=available.length===2?1:(Math.random()<Math.min(.94,.12+elapsed*.018)?2:1);
- let blocked=[];
- while(blocked.length<obstacleCount){let l=available[Math.floor(Math.random()*available.length)];if(!blocked.includes(l))blocked.push(l)}
- let safe=available.filter(n=>!blocked.includes(n));
- blocked.forEach(l=>items.push({kind:'obstacle',type:['boulder','snowman','tree'][Math.floor(Math.random()*3)],lane:l,y:-72,done:false}));
- if(Math.random()<.82&&safe.length){let giftLane=safe[Math.floor(Math.random()*safe.length)];items.push({kind:'present',lane:giftLane,y:-72,done:false})}
+
+  // TRACK CLOSURE: guarantee one safe lane per obstacle row.
+  if(brokenTrackState === 'active'){
+
+    const available = [0,1,2].filter(
+      l => l !== brokenLane
+    );
+
+    if(available.length !== 2) return;
+
+    // Randomly choose which of the two open lanes is safe.
+    const safeLane = available[
+      Math.floor(Math.random() * available.length)
+    ];
+
+    const blockedLane = available.find(
+      l => l !== safeLane
+    );
+
+    // Spawn exactly one obstacle.
+    items.push({
+      kind: 'obstacle',
+      type: ['boulder','snowman','tree'][
+        Math.floor(Math.random() * 3)
+      ],
+      lane: blockedLane,
+      y: -72,
+      done: false
+    });
+
+    // Optional present in the safe lane.
+    if(Math.random() < 0.78){
+      items.push({
+        kind: 'present',
+        lane: safeLane,
+        y: -72,
+        done: false
+      });
+    }
+
+    return;
+  }
+
+  // NORMAL GAMEPLAY: slalom sequences.
+  if(slalomQueue.length){
+    spawnSlalomRow();
+    return;
+  }
+
+  if(
+    elapsed >= 48 &&
+    distance >= 900 &&
+    elapsed >= slalomCooldown &&
+    Math.random() < 0.27 &&
+    beginSlalom()
+  ){
+    spawnSlalomRow();
+    return;
+  }
+
+  // NORMAL THREE-TRACK GAMEPLAY.
+  const lanes = [0,1,2];
+
+  const available = lanes.filter(
+    l => !(brokenTrackState === 'active' && l === brokenLane)
+  );
+
+  if(available.length < 2) return;
+
+  const obstacleCount =
+    Math.random() < Math.min(0.94, 0.12 + elapsed * 0.018) ? 2 : 1;
+
+  const blocked = [];
+
+  while(blocked.length < obstacleCount){
+    const l = available[
+      Math.floor(Math.random() * available.length)
+    ];
+
+    if(!blocked.includes(l)) blocked.push(l);
+  }
+
+  const safe = available.filter(
+    l => !blocked.includes(l)
+  );
+
+  blocked.forEach(l => {
+    items.push({
+      kind: 'obstacle',
+      type: ['boulder','snowman','tree'][
+        Math.floor(Math.random() * 3)
+      ],
+      lane: l,
+      y: -72,
+      done: false
+    });
+  });
+
+  if(Math.random() < 0.82 && safe.length){
+    const giftLane = safe[
+      Math.floor(Math.random() * safe.length)
+    ];
+
+    items.push({
+      kind: 'present',
+      lane: giftLane,
+      y: -72,
+      done: false
+    });
+  }
 }
+
 function startBrokenTrack(){
- // Only an outer track may fail: this always leaves two adjacent tracks open.
- brokenLane=Math.random()<.5?0:2;brokenTrackState='warning';brokenTimer=3.4;
+  // Only an outer track may fail: this always leaves two adjacent tracks open.
+  brokenLane = Math.random() < 0.5 ? 0 : 2;
+  brokenTrackState = 'warning';
+  brokenTimer = 3.4;
 }
 
 function hud(){ $('score').textContent=String(score).padStart(4,'0');$('distance').textContent=Math.floor(distance)+'m';$('multi').textContent='×'+(1+Math.min(1.5,combo*.05)).toFixed(1);$('shieldHud').textContent=shield?'SHIELD ON':''}
