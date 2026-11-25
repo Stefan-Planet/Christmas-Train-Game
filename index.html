@@ -88,23 +88,32 @@ function background(dt){
       continue;
     }
 
-    // Normal track resumes after the closure.
-    drawScrollingTrack(cx);
+   if(reopening){
+  const startImg=assets.trackStart;
+  const progress=worldScroll-brokenScrollStart;
 
-    if(reopening){
-      const startImg=assets.trackStart;
+  // Keep the lane white while the new track-start section approaches.
+  if(startImg&&startImg.complete&&startImg.naturalWidth){
+    const h=laneWidth*startImg.naturalHeight/startImg.naturalWidth;
+    const startY=-h+progress;
 
-      if(startImg&&startImg.complete&&startImg.naturalWidth){
-        const h=laneWidth*startImg.naturalHeight/startImg.naturalWidth;
-        const progress=worldScroll-brokenScrollStart;
-        const startY=-h+progress;
-
-        // The Track-Start scrolls down into the returning railway.
-        if(startY<H&&startY+h>0){
-          x.drawImage(startImg,left,Math.floor(startY),laneWidth,h);
-        }
-      }
+    if(startY<H&&startY+h>0){
+      x.drawImage(startImg,left,Math.floor(startY),laneWidth,h);
     }
+
+    // Resume normal tiles only once Track-Start has passed.
+    if(startY>=0){
+      x.save();
+      x.beginPath();
+      x.rect(left,startY,laneWidth,H-startY);
+      x.clip();
+      drawScrollingTrack(cx);
+      x.restore();
+    }
+  }
+}else{
+  drawScrollingTrack(cx);
+}
   }
 
   // Track closure warning.
