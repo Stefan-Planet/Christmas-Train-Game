@@ -30,7 +30,8 @@ const assetFiles={
 for(const [key,src] of Object.entries(assetFiles)){const img=new Image();img.src=src;img.onload=()=>{assets[key]=img};img.onerror=()=>console.warn('Could not load game asset:',src);}
 const laneWidth=110; // 10px white gap between 110px-wide lanes, 120px centre spacing.
 const drawAsset=(key,px,py,w,h)=>{const img=assets[key];if(img&&img.complete&&img.naturalWidth){x.drawImage(img,Math.round(px-w/2),Math.round(py-h/2),w,h);return true}return false;};function resize(){let r=c.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);c.width=r.width*d;c.height=r.height*d;x.setTransform(c.width/W,0,0,c.height/H,0,0)}new ResizeObserver(resize).observe(c);resize();const $=id=>document.getElementById(id);let mode='menu',lane=1,score=0,distance=0,speed=190,items=[],spawnTimer=0,shield=0,flash=0,last=0,combo=0,player='Driver',email='',elapsed=0,worldScroll=0;let brokenTrackState='idle',brokenLane=1,brokenTimer=0,brokenStarted=false,nextBrokenAt=Infinity,slalomQueue=[],slalomCooldown=0;
-let brokenScrollStart=0;const laneX=[180,300,420],playerY=674,hitY=642;let snow=Array.from({length:100},()=>({x:Math.random()*W,y:Math.random()*H,s:1+Math.random()*2,v:12+Math.random()*25}));let blizzardState='idle',blizzardTimer=25,blizzardTime=0,blizzardFlakes=Array.from({length:145},()=>({x:Math.random()*W,y:Math.random()*H,s:1+Math.random()*3,v:320+Math.random()*530,drift:-85+Math.random()*180}));
+let brokenScrollStart=0;
+let transitionBuffer=0;const laneX=[180,300,420],playerY=674,hitY=642;let snow=Array.from({length:100},()=>({x:Math.random()*W,y:Math.random()*H,s:1+Math.random()*2,v:12+Math.random()*25}));let blizzardState='idle',blizzardTimer=25,blizzardTime=0,blizzardFlakes=Array.from({length:145},()=>({x:Math.random()*W,y:Math.random()*H,s:1+Math.random()*3,v:320+Math.random()*530,drift:-85+Math.random()*180}));
 const rect=(a,b,w,h,col)=>{x.fillStyle=col;x.fillRect(Math.round(a),Math.round(b),Math.round(w),Math.round(h))};function poly(p,col,stroke){x.beginPath();p.forEach((q,i)=>i?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]));x.closePath();x.fillStyle=col;x.fill();if(stroke){x.strokeStyle=stroke;x.lineWidth=2;x.stroke()}}
 function tree(px,py,s,lights=true){x.save();x.translate(px,py);x.scale(s,s);rect(-5,-2,10,25,'#765039');poly([[-2,-72],[-30,-22],[-17,-25],[-40,2],[40,2],[17,-25],[30,-22],[2,-72]],'#174d40','#0b382f');poly([[-1,-65],[-22,-27],[-12,-30],[0,-44],[12,-30],[22,-27]],'#d9e9df');if(lights){rect(-18,-22,4,4,'#f4d16e');rect(12,-34,4,4,'#d85b4e');rect(-3,-48,4,4,'#f4d16e')}x.restore()}
 function cabin(px,py,s){x.save();x.translate(px,py);x.scale(s,s);rect(-28,-22,56,34,'#9d5144');poly([[-34,-22],[0,-49],[34,-22]],'#4c3a39');rect(-8,-9,16,21,'#533a32');rect(-23,-12,10,10,'#f7d67b');rect(13,-12,10,10,'#f7d67b');rect(-25,-14,14,3,'#fff0c9');rect(11,-14,14,3,'#fff0c9');rect(-34,10,68,5,'#e8eee0');x.restore()}
@@ -255,13 +256,13 @@ function spawnCollectible(lane,presentChance){
 }
 function spawnSlalomRow(){
  const safeLane=slalomQueue.shift();
- const available=[0,1,2].filter(l=>!(brokenTrackState==='active'&&l===brokenLane));
+ const available=[0,1,2].filter(l=>!(['active','reopening'].includes(brokenTrackState)&&l===brokenLane));
  available.filter(l=>l!==safeLane).forEach(l=>items.push({kind:'obstacle',type:['boulder','snowman','tree'][Math.floor(Math.random()*3)],lane:l,y:-72,done:false}));
  // A short gift trail on the only safe lane makes the route feel rewarding.
  spawnCollectible(safeLane,.78);
 }
 function beginSlalom(){
- const available=[0,1,2].filter(l=>!(brokenTrackState==='active'&&l===brokenLane));
+ const available=[0,1,2].filter(l=>!(['active','reopening'].includes(brokenTrackState)&&l===brokenLane));
  if(available.length<2)return false;
  let sequence;
  if(available.length===2){sequence=[available[0],available[1],available[0],available[1],available[0]]}
@@ -272,7 +273,7 @@ function beginSlalom(){
 function spawnRow(){
 
   // TRACK CLOSURE: guarantee one safe lane per obstacle row.
-  if(brokenTrackState === 'active'){
+  if(brokenTrackState === 'active' || brokenTrackState === 'reopening'){
 
     const available = [0,1,2].filter(
       l => l !== brokenLane
@@ -327,7 +328,7 @@ function spawnRow(){
   const lanes = [0,1,2];
 
   const available = lanes.filter(
-    l => !(brokenTrackState === 'active' && l === brokenLane)
+    l => !(['active','reopening'].includes(brokenTrackState) && l === brokenLane)
   );
 
   if(available.length < 2) return;
@@ -483,24 +484,31 @@ function frame(t){
       brokenStarted=true;startBrokenTrack();
     }else if(brokenTrackState==='idle'&&brokenStarted&&elapsed>=nextBrokenAt){startBrokenTrack()}
     else if(brokenTrackState==='warning'){
-      brokenTimer-=dt;
       if(brokenTimer<=0){
-        brokenTrackState='active';
-brokenTimer=10;
-brokenScrollStart=worldScroll;
+  brokenTrackState='active';
+  brokenTimer=10;
+  brokenScrollStart=worldScroll;
 
-// Remove hazards already in flight as the closure begins.
-items=items.filter(o=>o.kind!=='obstacle');
-slalomQueue=[];
-      }
+  // Crash if the player failed to leave the closing track.
+  if(lane===brokenLane){
+    finish();
+    return;
+  }
+
+  // Remove all items from the closed lane and clear existing hazards.
+  items=items.filter(o=>o.lane!==brokenLane && o.kind!=='obstacle');
+  slalomQueue=[];
+  transitionBuffer=2.5;
+}
     }else if(brokenTrackState==='active'){
   brokenTimer-=dt;
 
   if(brokenTimer<=0){
-    brokenTrackState='reopening';
-    brokenScrollStart=worldScroll;
-    brokenTimer=0;
-  }
+  brokenTrackState='reopening';
+  brokenScrollStart=worldScroll;
+  brokenTimer=0;
+  transitionBuffer=2.5;
+}
 
 }else if(brokenTrackState==='reopening'){
   const img=assets.trackStart;
@@ -531,8 +539,14 @@ slalomQueue=[];
     // One shared world-distance drives track sleepers, scenery and every collectible/hazard.
     worldScroll+=speed*dt;
     distance+=speed*dt/24;
-    spawnTimer-=dt;
-    if(spawnTimer<=0){spawnRow();let ramp=Math.min(1,elapsed/55);spawnTimer=slalomQueue.length?Math.max(.98,1.22-ramp*.12):1.38-ramp*.55;}
+    transitionBuffer=Math.max(0,transitionBuffer-dt);
+
+spawnTimer-=dt;
+if(spawnTimer<=0){
+  if(transitionBuffer<=0)spawnRow();
+  let ramp=Math.min(1,elapsed/55);
+  spawnTimer=slalomQueue.length?Math.max(.98,1.22-ramp*.12):1.38-ramp*.55;
+}
     for(let o of items){
       let previousY=o.y;
       o.y+=speed*dt;
