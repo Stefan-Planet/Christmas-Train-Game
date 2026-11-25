@@ -29,7 +29,7 @@ const assetFiles={
 };
 for(const [key,src] of Object.entries(assetFiles)){const img=new Image();img.src=src;img.onload=()=>{assets[key]=img};img.onerror=()=>console.warn('Could not load game asset:',src);}
 const laneWidth=110; // 10px white gap between 110px-wide lanes, 120px centre spacing.
-const drawAsset=(key,px,py,w,h)=>{const img=assets[key];if(img&&img.complete&&img.naturalWidth){x.drawImage(img,Math.round(px-w/2),Math.round(py-h/2),w,h);return true}return false;};function resize(){let r=c.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);c.width=r.width*d;c.height=r.height*d;x.setTransform(c.width/W,0,0,c.height/H,0,0)}new ResizeObserver(resize).observe(c);resize();const $=id=>document.getElementById(id);let mode='menu',lane=1,score=0,distance=0,speed=190,items=[],spawnTimer=0,shield=0,flash=0,last=0,combo=0,player='Driver',email='',elapsed=0,worldScroll=0;let brokenTrackState='idle',brokenLane=1,brokenTimer=0,brokenStarted=false,nextBrokenAt=Infinity,slalomQueue=[],slalomCooldown=0;
+const drawAsset=(key,px,py,w,h)=>{const img=assets[key];if(img&&img.complete&&img.naturalWidth){x.drawImage(img,Math.round(px-w/2),Math.round(py-h/2),w,h);return true}return false;};function resize(){let r=c.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);c.width=r.width*d;c.height=r.height*d;x.setTransform(c.width/W,0,0,c.height/H,0,0)}new ResizeObserver(resize).observe(c);resize();const $=id=>document.getElementById(id);let mode='menu',lane=1,score=0,distance=0,speed=240,items=[],spawnTimer=0,shield=0,flash=0,last=0,combo=0,player='Driver',email='',elapsed=0,worldScroll=0;let brokenTrackState='idle',brokenLane=1,brokenTimer=0,brokenStarted=false,nextBrokenAt=Infinity,slalomQueue=[],slalomCooldown=0;
 let brokenScrollStart=0;
 let transitionBuffer=0;const laneX=[180,300,420],playerY=674,hitY=642;let snow=Array.from({length:100},()=>({x:Math.random()*W,y:Math.random()*H,s:1+Math.random()*2,v:12+Math.random()*25}));let blizzardState='idle',blizzardTimer=25,blizzardTime=0,blizzardFlakes=Array.from({length:145},()=>({x:Math.random()*W,y:Math.random()*H,s:1+Math.random()*3,v:320+Math.random()*530,drift:-85+Math.random()*180}));
 const rect=(a,b,w,h,col)=>{x.fillStyle=col;x.fillRect(Math.round(a),Math.round(b),Math.round(w),Math.round(h))};function poly(p,col,stroke){x.beginPath();p.forEach((q,i)=>i?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]));x.closePath();x.fillStyle=col;x.fill();if(stroke){x.strokeStyle=stroke;x.lineWidth=2;x.stroke()}}
@@ -379,7 +379,7 @@ function startBrokenTrack(){
 }
 
 function hud(){ $('score').textContent=String(score).padStart(4,'0');$('distance').textContent=Math.floor(distance)+'m';$('multi').textContent='×'+(1+Math.min(2,Math.floor(combo/5)*.25)).toFixed(2);$('shieldHud').textContent=shield?'SHIELD ON':''}
-function reset(){lane=1;score=0;distance=0;speed=190;items=[];spawnTimer=1.15;shield=0;flash=0;combo=0;elapsed=0;worldScroll=0;brokenTrackState='idle';brokenLane=1;brokenTimer=0;brokenStarted=false;nextBrokenAt=Infinity;slalomQueue=[];slalomCooldown=0;blizzardState='idle';blizzardTimer=12+Math.random()*8;blizzardTime=0;blizzardFlakes.forEach(f=>{f.x=Math.random()*W;f.y=Math.random()*H});hud()}
+function reset(){lane=1;score=0;distance=0;speed=240;items=[];spawnTimer=1.15;shield=0;flash=0;combo=0;elapsed=0;worldScroll=0;brokenTrackState='idle';brokenLane=1;brokenTimer=0;brokenStarted=false;nextBrokenAt=Infinity;slalomQueue=[];slalomCooldown=0;blizzardState='idle';blizzardTimer=12+Math.random()*8;blizzardTime=0;blizzardFlakes.forEach(f=>{f.x=Math.random()*W;f.y=Math.random()*H});hud()}
 function start(){player=$('username').value.trim()||'Santa';email=$('email').value.trim();if(email&&!/^\S+@\S+\.\S+$/.test(email)){$('email').focus();$('email').style.borderColor='#ff7777';return}$('email').style.borderColor='';localStorage.setItem('xmasExpressProfile',JSON.stringify({name:player,email}));reset();mode='playing';['menu','leader','gameover'].forEach(id=>$(id).classList.add('hidden'));$('hud').classList.remove('hidden')}
 function finish(){if(mode!=='playing')return;mode='over';$('hud').classList.add('hidden');let data=JSON.parse(localStorage.getItem('xmasExpressScores')||'[]');data.push({name:player,score,date:Date.now()});data.sort((a,b)=>b.score-a.score);localStorage.setItem('xmasExpressScores',JSON.stringify(data.slice(0,10)));$('resultText').textContent=`${player} — final score ${score}. Presents collected: ${combo} · Distance: ${Math.floor(distance)}m.`;$('gameover').classList.remove('hidden')}
 function board(){let data=JSON.parse(localStorage.getItem('xmasExpressScores')||'[]');$('scoreRows').innerHTML=data.length?data.slice(0,10).map((r,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(r.name)}</td><td>${r.score}</td></tr>`).join(''):'<tr><td colspan="3" style="text-align:center;padding:22px">No runs yet — be the first!</td></tr>';$('leader').classList.remove('hidden');$('menu').classList.add('hidden');$('gameover').classList.add('hidden')}
@@ -475,124 +475,147 @@ function drawTrackAlert(){
  x.restore();
 }
 function draw(){background(1/60);if(mode==='playing')drawTrackAlert();if(mode==='playing'||mode==='over'){items.slice().sort((a,b)=>a.y-b.y).forEach(drawItem);train();if(mode==='playing')drawBlizzard()}else{present(laneX[0],390);present(laneX[2],300);train()}}
+
 function frame(t){
-  let dt=Math.min((t-last)/1000||0,.04);last=t;
+  let dt=Math.min((t-last)/1000||0,.04);
+  last=t;
+
   if(mode==='playing'){
     elapsed+=dt;
-    // From 2,000m or 90 seconds, warn the player before closing one track for 10 seconds.
+
+    // Track closure state machine.
     if(brokenTrackState==='idle'&&!brokenStarted&&(distance>=100||elapsed>=10)){
-      brokenStarted=true;startBrokenTrack();
-    }else if(brokenTrackState==='idle'&&brokenStarted&&elapsed>=nextBrokenAt){startBrokenTrack()}
+      brokenStarted=true;
+      startBrokenTrack();
+    }else if(brokenTrackState==='idle'&&brokenStarted&&elapsed>=nextBrokenAt){
+      startBrokenTrack();
     }else if(brokenTrackState==='warning'){
-  brokenTimer-=dt;
+      brokenTimer-=dt;
 
-  if(brokenTimer<=0){
-    brokenTrackState='active';
-    brokenTimer=10;
-    brokenScrollStart=worldScroll;
+      if(brokenTimer<=0){
+        brokenTrackState='active';
+        brokenTimer=10;
+        brokenScrollStart=worldScroll;
 
-    // Crash if the player failed to leave the closing track.
-    if(lane===brokenLane){
-      finish();
+        // Crash if the player failed to leave the closing track.
+        if(lane===brokenLane){
+          finish();
+        }
+
+        // Remove items from the closed lane and clear existing hazards.
+        items=items.filter(o=>o.lane!==brokenLane && o.kind!=='obstacle');
+        slalomQueue=[];
+        transitionBuffer=2.5;
+      }
+    }else if(brokenTrackState==='active'){
+      brokenTimer-=dt;
+
+      if(brokenTimer<=0){
+        brokenTrackState='reopening';
+        brokenScrollStart=worldScroll;
+        brokenTimer=0;
+        transitionBuffer=2.5;
+      }
+    }else if(brokenTrackState==='reopening'){
+      const img=assets.trackStart;
+      const h=img&&img.complete&&img.naturalWidth
+        ? laneWidth*img.naturalHeight/img.naturalWidth
+        : 170;
+
+      if(worldScroll-brokenScrollStart>H+h){
+        brokenTrackState='idle';
+        nextBrokenAt=elapsed+48+Math.random()*17;
+      }
     }
 
-    // Remove items from the closed lane and clear existing hazards.
-    items=items.filter(o=>o.lane!==brokenLane && o.kind!=='obstacle');
-    slalomQueue=[];
-    transitionBuffer=2.5;
-  }
-  brokenTrackState='active';
-  brokenTimer=10;
-  brokenScrollStart=worldScroll;
+    // Speed ramp.
+    speed=240+5.5*elapsed+0.018*elapsed*elapsed;
 
-  // Crash if the player failed to leave the closing track.
-  if(lane===brokenLane){
-    finish();
-    return;
-  }
-
-  // Remove all items from the closed lane and clear existing hazards.
-  items=items.filter(o=>o.lane!==brokenLane && o.kind!=='obstacle');
-  slalomQueue=[];
-  transitionBuffer=2.5;
-}
-    }else if(brokenTrackState==='active'){
-  brokenTimer-=dt;
-
-  if(brokenTimer<=0){
-  brokenTrackState='reopening';
-  brokenScrollStart=worldScroll;
-  brokenTimer=0;
-  transitionBuffer=2.5;
-}
-
-}else if(brokenTrackState==='reopening'){
-  const img=assets.trackStart;
-  const h=img&&img.complete&&img.naturalWidth
-    ? laneWidth*img.naturalHeight/img.naturalWidth
-    : 170;
-
-  if(worldScroll-brokenScrollStart>H+h){
-    brokenTrackState='idle';
-    nextBrokenAt=elapsed+48+Math.random()*17;
-  }
-}
-    // Stronger, earlier ramp: starts calm, then becomes visibly faster every few seconds.
-    // Approx speeds: 190 at start, 255 at 15s, 320 at 30s, 450 at 60s, capped at 560.
-   speed=240+5.5*elapsed+0.018*elapsed*elapsed;
-    // Periodic blizzards: warning, then a brief low-visibility snow squall.
+    // Periodic blizzards.
     if(blizzardState==='idle'){
       blizzardTimer-=dt;
-      if(blizzardTimer<=0){blizzardState='warning';blizzardTime=2.6}
+      if(blizzardTimer<=0){
+        blizzardState='warning';
+        blizzardTime=2.6;
+      }
     }else if(blizzardState==='warning'){
       blizzardTime-=dt;
-      if(blizzardTime<=0){blizzardState='active';blizzardTime=6.5}
+      if(blizzardTime<=0){
+        blizzardState='active';
+        blizzardTime=6.5;
+      }
     }else if(blizzardState==='active'){
       blizzardTime-=dt;
-      blizzardFlakes.forEach(f=>{f.y+=f.v*dt;f.x+=f.drift*dt;if(f.y>H+8){f.y=-10;f.x=Math.random()*W}if(f.x<-10)f.x=W+8;if(f.x>W+10)f.x=-8});
-      if(blizzardTime<=0){blizzardState='idle';blizzardTimer=12+Math.random()*9}
+      blizzardFlakes.forEach(f=>{
+        f.y+=f.v*dt;
+        f.x+=f.drift*dt;
+        if(f.y>H+8){
+          f.y=-10;
+          f.x=Math.random()*W;
+        }
+        if(f.x<-10)f.x=W+8;
+        if(f.x>W+10)f.x=-8;
+      });
+      if(blizzardTime<=0){
+        blizzardState='idle';
+        blizzardTimer=12+Math.random()*9;
+      }
     }
-    // One shared world-distance drives track sleepers, scenery and every collectible/hazard.
+
+    // Shared world movement.
     worldScroll+=speed*dt;
     distance+=speed*dt/24;
     transitionBuffer=Math.max(0,transitionBuffer-dt);
 
-spawnTimer-=dt;
-if(spawnTimer<=0){
-  if(transitionBuffer<=0)spawnRow();
-  let ramp=Math.min(1,elapsed/55);
-  spawnTimer=slalomQueue.length?Math.max(.98,1.22-ramp*.12):1.38-ramp*.55;
-}
+    // Spawn rows.
+    spawnTimer-=dt;
+    if(spawnTimer<=0){
+      if(transitionBuffer<=0)spawnRow();
+      let ramp=Math.min(1,elapsed/55);
+      spawnTimer=slalomQueue.length
+        ? Math.max(.98,1.22-ramp*.12)
+        : 1.38-ramp*.55;
+    }
+
+    // Move and process items.
     for(let o of items){
       let previousY=o.y;
       o.y+=speed*dt;
-      // Detect crossing the collection/collision line, not a narrow timing window.
+
       if(!o.done&&previousY<hitY&&o.y>=hitY){
         o.done=true;
+
         if(o.lane===lane){
-  if(o.kind==='present'){
-    combo++;
-    o.collected=true;
-  }
-  else if(o.kind==='shield'){
-    shield=1;
-    o.collected=true;
-  }
-  else if(o.kind==='obstacle'){
-    if(shield){shield=0;flash=.9}
-    else if(flash<=0){finish()}
-  }
-}
+          if(o.kind==='present'){
+            combo++;
+            o.collected=true;
+          }else if(o.kind==='shield'){
+            shield=1;
+            o.collected=true;
+          }else if(o.kind==='obstacle'){
+            if(shield){
+              shield=0;
+              flash=.9;
+            }else if(flash<=0){
+              finish();
+            }
+          }
+        }
       }
     }
+
     items=items.filter(o=>o.y<H+100&&!o.collected);
     flash=Math.max(0,flash-dt);
+
     let multiplier=1+Math.min(2,Math.floor(combo/5)*.25);
     score=Math.floor(distance*2+combo*100*multiplier);
     hud();
   }
-  draw();requestAnimationFrame(frame)
+
+  draw();
+  requestAnimationFrame(frame);
 }
+
 requestAnimationFrame(frame);
 document.addEventListener('keydown',e=>{const target=e.target;const typing=target&&(target.tagName==='INPUT'||target.tagName==='TEXTAREA'||target.isContentEditable);if(typing)return;if(['ArrowLeft','ArrowRight','a','A','d','D'].includes(e.key)&&mode==='playing'){e.preventDefault();move(e.key==='ArrowLeft'||e.key==='a'||e.key==='A'?-1:1)}if(e.key==='Enter'&&mode==='menu'&&!typing)start()});$('startBtn').onclick=start;$('leaderBtn').onclick=board;$('leaderBack').onclick=()=>{$('leader').classList.add('hidden');$('menu').classList.remove('hidden')};$('againBtn').onclick=start;$('overBoardBtn').onclick=board;$('homeBtn').onclick=()=>{$('gameover').classList.add('hidden');$('menu').classList.remove('hidden');$('hud').classList.add('hidden');mode='menu'};$('leftBtn').onclick=()=>move(-1);$('rightBtn').onclick=()=>move(1);let tx=null,ty=null;c.addEventListener('touchstart',e=>{tx=e.changedTouches[0].clientX;ty=e.changedTouches[0].clientY},{passive:true});c.addEventListener('touchend',e=>{if(tx===null)return;let dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;if(Math.abs(dx)>24&&Math.abs(dx)>Math.abs(dy))move(dx<0?-1:1);tx=ty=null},{passive:true});
 })();</script></body></html>
