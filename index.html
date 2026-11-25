@@ -235,8 +235,8 @@ function train(){
 function spawnCollectible(lane,presentChance){
   const roll=Math.random();
 
-  // Rare shield: 2% chance per spawn row.
-  if(!shield && roll<0.02){
+  // Rare shield: 3% chance per spawn row.
+  if(!shield && roll<0.03){
     items.push({
       kind:'shield',
       lane,
@@ -483,8 +483,24 @@ function frame(t){
     if(brokenTrackState==='idle'&&!brokenStarted&&(distance>=100||elapsed>=10)){
       brokenStarted=true;startBrokenTrack();
     }else if(brokenTrackState==='idle'&&brokenStarted&&elapsed>=nextBrokenAt){startBrokenTrack()}
-    else if(brokenTrackState==='warning'){
-      if(brokenTimer<=0){
+    }else if(brokenTrackState==='warning'){
+  brokenTimer-=dt;
+
+  if(brokenTimer<=0){
+    brokenTrackState='active';
+    brokenTimer=10;
+    brokenScrollStart=worldScroll;
+
+    // Crash if the player failed to leave the closing track.
+    if(lane===brokenLane){
+      finish();
+    }
+
+    // Remove items from the closed lane and clear existing hazards.
+    items=items.filter(o=>o.lane!==brokenLane && o.kind!=='obstacle');
+    slalomQueue=[];
+    transitionBuffer=2.5;
+  }
   brokenTrackState='active';
   brokenTimer=10;
   brokenScrollStart=worldScroll;
@@ -523,7 +539,7 @@ function frame(t){
 }
     // Stronger, earlier ramp: starts calm, then becomes visibly faster every few seconds.
     // Approx speeds: 190 at start, 255 at 15s, 320 at 30s, 450 at 60s, capped at 560.
-   speed=190+5.5*elapsed+0.018*elapsed*elapsed;
+   speed=240+5.5*elapsed+0.018*elapsed*elapsed;
     // Periodic blizzards: warning, then a brief low-visibility snow squall.
     if(blizzardState==='idle'){
       blizzardTimer-=dt;
