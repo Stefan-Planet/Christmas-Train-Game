@@ -21,6 +21,7 @@ const assetFiles={
   trackClosed:'assets/tracks/Track-Closed.jpg',
   train:'assets/train/Train.png',
   present:'assets/collectibles/Present.png',
+  shield:'assets/collectibles/Shield.png',
   boulder:'assets/obstacles/Boulder.png',
   snowman:'assets/obstacles/Snowman.png',
   tree:'assets/obstacles/Tree.png'
@@ -93,18 +94,18 @@ function background(dt){
       const progress=worldScroll-brokenScrollStart;
 
       // The end transition moves upwards as the closed section takes over.
-      const endTop=H-h-progress;
+      const endTop=-h+progress;
       const endBottom=endTop+h;
 
-      // Normal track above the transition.
-      if(endTop>0){
-        drawTiledAsset('track',cx,0,Math.min(H,endTop));
-      }
+      // Closed track above the transition.
+if(endTop>0){
+  drawTiledAsset('trackClosed',cx,0,Math.min(H,endTop));
+}
 
-      // Repeating closed-track tiles below the transition.
-      if(endBottom<H){
-        drawTiledAsset('trackClosed',cx,Math.max(0,endBottom),H);
-      }
+// Normal track below the transition.
+if(endBottom<H){
+  drawTiledAsset('track',cx,Math.max(0,endBottom),H);
+}
 
       // The one-off transition between normal and closed track.
       if(img&&img.complete&&img.naturalWidth&&endTop<H&&endBottom>0){
@@ -129,18 +130,18 @@ function background(dt){
       const progress=worldScroll-brokenScrollStart;
 
       // Track-Start moves upwards, revealing normal track behind it.
-      const startTop=H-progress;
+      const startTop=-h+progress;
       const startBottom=startTop+h;
 
-      // Repeating closed-track tiles above the transition.
-      if(startTop>0){
-        drawTiledAsset('trackClosed',cx,0,Math.min(H,startTop));
-      }
+      // Normal track above the transition.
+if(startTop>0){
+  drawTiledAsset('track',cx,0,Math.min(H,startTop));
+}
 
-      // Normal track below the transition.
-      if(startBottom<H){
-        drawTiledAsset('track',cx,Math.max(0,startBottom),H);
-      }
+// Closed track below the transition.
+if(startBottom<H){
+  drawTiledAsset('trackClosed',cx,Math.max(0,startBottom),H);
+}
 
       // The one-off transition back to normal track.
       if(img&&img.complete&&img.naturalWidth&&startTop<H&&startBottom>0){
@@ -205,7 +206,16 @@ function obstacle(o){
   }
   x.restore();
 }
-function shieldItem(px,py){x.save();x.translate(px,py);poly([[0,-27],[22,-17],[18,11],[0,27],[-18,11],[-22,-17]],'#f2ce68','#fff0b6');rect(-3,-17,6,34,'#c13e46');rect(-15,-3,30,6,'#c13e46');x.restore()}
+function shieldItem(px,py){
+  if(drawAsset('shield',px,py,54,54))return;
+
+  x.save();
+  x.translate(px,py);
+  poly([[0,-27],[22,-17],[18,11],[0,27],[-18,11],[-22,-17]],'#f2ce68','#fff0b6');
+  rect(-3,-17,6,34,'#c13e46');
+  rect(-15,-3,30,6,'#c13e46');
+  x.restore();
+}
 function drawItem(o){let px=laneX[o.lane],py=o.y;if(o.kind==='present')present(px,py);else if(o.kind==='obstacle')obstacle(o);else shieldItem(px,py)}
 function train(){
   const px=laneX[lane],py=playerY;
@@ -220,12 +230,34 @@ function train(){
   }
   x.restore();
 }
+function spawnCollectible(lane,presentChance){
+  const roll=Math.random();
+
+  // Rare shield: 4% chance per spawn row.
+  if(roll<0.04){
+    items.push({
+      kind:'shield',
+      lane,
+      y:-72,
+      done:false
+    });
+  }
+  // Otherwise, retain the normal present chance.
+  else if(roll<presentChance){
+    items.push({
+      kind:'present',
+      lane,
+      y:-72,
+      done:false
+    });
+  }
+}
 function spawnSlalomRow(){
  const safeLane=slalomQueue.shift();
  const available=[0,1,2].filter(l=>!(brokenTrackState==='active'&&l===brokenLane));
  available.filter(l=>l!==safeLane).forEach(l=>items.push({kind:'obstacle',type:['boulder','snowman','tree'][Math.floor(Math.random()*3)],lane:l,y:-72,done:false}));
  // A short gift trail on the only safe lane makes the route feel rewarding.
- if(Math.random()<.78)items.push({kind:'present',lane:safeLane,y:-72,done:false});
+ spawnCollectible(safeLane,.78);
 }
 function beginSlalom(){
  const available=[0,1,2].filter(l=>!(brokenTrackState==='active'&&l===brokenLane));
@@ -268,14 +300,7 @@ function spawnRow(){
     });
 
     // Optional present in the safe lane.
-    if(Math.random() < 0.78){
-      items.push({
-        kind: 'present',
-        lane: safeLane,
-        y: -72,
-        done: false
-      });
-    }
+    spawnCollectible(safeLane,.78);
 
     return;
   }
@@ -335,18 +360,13 @@ function spawnRow(){
     });
   });
 
-  if(Math.random() < 0.82 && safe.length){
-    const giftLane = safe[
-      Math.floor(Math.random() * safe.length)
-    ];
+  if(safe.length){
+  const giftLane = safe[
+    Math.floor(Math.random() * safe.length)
+  ];
 
-    items.push({
-      kind: 'present',
-      lane: giftLane,
-      y: -72,
-      done: false
-    });
-  }
+  spawnCollectible(giftLane,.82);
+}
 }
 
 function startBrokenTrack(){
@@ -356,7 +376,7 @@ function startBrokenTrack(){
   brokenTimer = 3.4;
 }
 
-function hud(){ $('score').textContent=String(score).padStart(4,'0');$('distance').textContent=Math.floor(distance)+'m';$('multi').textContent='×'+(1+Math.min(1.5,combo*.05)).toFixed(1);$('shieldHud').textContent=shield?'SHIELD ON':''}
+function hud(){ $('score').textContent=String(score).padStart(4,'0');$('distance').textContent=Math.floor(distance)+'m';$('multi').textContent='×'+(1+Math.min(2,Math.floor(combo/5)*.25)).toFixed(2);$('shieldHud').textContent=shield?'SHIELD ON':''}
 function reset(){lane=1;score=0;distance=0;speed=190;items=[];spawnTimer=1.15;shield=0;flash=0;combo=0;elapsed=0;worldScroll=0;brokenTrackState='idle';brokenLane=1;brokenTimer=0;brokenStarted=false;nextBrokenAt=Infinity;slalomQueue=[];slalomCooldown=0;blizzardState='idle';blizzardTimer=12+Math.random()*8;blizzardTime=0;blizzardFlakes.forEach(f=>{f.x=Math.random()*W;f.y=Math.random()*H});hud()}
 function start(){player=$('username').value.trim()||'Santa';email=$('email').value.trim();if(email&&!/^\S+@\S+\.\S+$/.test(email)){$('email').focus();$('email').style.borderColor='#ff7777';return}$('email').style.borderColor='';localStorage.setItem('xmasExpressProfile',JSON.stringify({name:player,email}));reset();mode='playing';['menu','leader','gameover'].forEach(id=>$(id).classList.add('hidden'));$('hud').classList.remove('hidden')}
 function finish(){if(mode!=='playing')return;mode='over';$('hud').classList.add('hidden');let data=JSON.parse(localStorage.getItem('xmasExpressScores')||'[]');data.push({name:player,score,date:Date.now()});data.sort((a,b)=>b.score-a.score);localStorage.setItem('xmasExpressScores',JSON.stringify(data.slice(0,10)));$('resultText').textContent=`${player} — final score ${score}. Presents collected: ${combo} · Distance: ${Math.floor(distance)}m.`;$('gameover').classList.remove('hidden')}
@@ -519,16 +539,22 @@ slalomQueue=[];
       if(!o.done&&previousY<hitY&&o.y>=hitY){
         o.done=true;
         if(o.lane===lane){
-          if(o.kind==='present'){combo++}
-          else if(o.kind==='shield'){shield=1}
-          else if(o.kind==='obstacle'){
-            if(shield){shield=0;flash=.9}
-            else if(flash<=0){finish()}
-          }
-        }
+  if(o.kind==='present'){
+    combo++;
+    o.collected=true;
+  }
+  else if(o.kind==='shield'){
+    shield=1;
+    o.collected=true;
+  }
+  else if(o.kind==='obstacle'){
+    if(shield){shield=0;flash=.9}
+    else if(flash<=0){finish()}
+  }
+}
       }
     }
-    items=items.filter(o=>o.y<H+100);
+    items=items.filter(o=>o.y<H+100&&!o.collected);
     flash=Math.max(0,flash-dt);
     let multiplier=1+Math.min(2,Math.floor(combo/5)*.25);
     score=Math.floor(distance*2+combo*100*multiplier);
