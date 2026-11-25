@@ -484,9 +484,9 @@ function frame(t){
     elapsed+=dt;
 
     // Track closure state machine.
-    if(brokenTrackState==='idle'&&!brokenStarted&&(distance>=100||elapsed>=10)){
+    if(brokenTrackState==='idle'&&!brokenStarted&&distance>=100){
       brokenStarted=true;
-      startBrokenTrack();
+nextBrokenAt=elapsed+8+Math.random()*12;
     }else if(brokenTrackState==='idle'&&brokenStarted&&elapsed>=nextBrokenAt){
       startBrokenTrack();
     }else if(brokenTrackState==='warning'){
@@ -524,7 +524,7 @@ function frame(t){
 
       if(worldScroll-brokenScrollStart>H+h){
         brokenTrackState='idle';
-        nextBrokenAt=elapsed+48+Math.random()*17;
+        nextBrokenAt=elapsed+55+Math.random()*25;
       }
     }
 
