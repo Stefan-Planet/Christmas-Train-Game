@@ -40,20 +40,11 @@ function drawScrollingTrack(cx) {
     return;
   }
 
-  // Draw the image at exactly the width of the track.
-  const tileHeight = img.naturalHeight * (laneWidth / img.naturalWidth);
-
-  // Scroll the repeated image downwards.
+  const tileHeight = 256 * (laneWidth / 104);
   const offset = worldScroll % tileHeight;
 
   for (let y = offset - tileHeight; y < H; y += tileHeight) {
-    x.drawImage(
-      img,
-      left,
-      Math.floor(y),
-      laneWidth,
-      tileHeight + 1
-    );
+    x.drawImage(img, left, y, laneWidth, tileHeight);
   }
 }
 function background(dt){
