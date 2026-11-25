@@ -40,7 +40,7 @@ function drawScrollingTrack(cx) {
     return;
   }
 
-  const tileHeight = 256 * (laneWidth / 104);
+  const tileHeight = 256;
   const offset = worldScroll % tileHeight;
 
   for (let y = offset - tileHeight; y < H; y += tileHeight) {
