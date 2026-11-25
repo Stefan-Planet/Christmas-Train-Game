@@ -18,6 +18,7 @@ const assetFiles={
   track:'assets/tracks/Track-Full.jpg',
   trackStart:'assets/tracks/Track-Start.jpg',
   trackEnd:'assets/tracks/Track-End.jpg',
+  trackClosed:'assets/tracks/Track-Closed.jpg',
   train:'assets/train/Train.png',
   present:'assets/collectibles/Present.png',
   boulder:'assets/obstacles/Boulder.png',
@@ -50,90 +51,112 @@ function drawScrollingTrack(cx) {
 }
 
 
+
 function background(dt){
   rect(0,0,W,H,'#ffffff');
+
+  const tileHeight=256;
+
+  // Draw a repeating track asset, clipped to a specified vertical area.
+  function drawTiledAsset(key,cx,clipTop,clipBottom){
+    const img=assets[key];
+    if(!img||!img.complete||!img.naturalWidth)return;
+
+    const left=cx-laneWidth/2;
+    const offset=worldScroll%tileHeight;
+
+    x.save();
+    x.beginPath();
+    x.rect(left,clipTop,laneWidth,Math.max(0,clipBottom-clipTop));
+    x.clip();
+
+    for(let y=offset-tileHeight;y<H+tileHeight;y+=tileHeight){
+      x.drawImage(img,left,y,laneWidth,tileHeight);
+    }
+
+    x.restore();
+  }
 
   for(let k=0;k<3;k++){
     const cx=laneX[k];
     const left=cx-laneWidth/2;
+
     const closed=brokenTrackState==='active'&&k===brokenLane;
     const reopening=brokenTrackState==='reopening'&&k===brokenLane;
 
+    // CLOSING: normal track -> Track-End -> repeating Track-Closed.
     if(closed){
-      const endImg=assets.trackEnd;
+      const img=assets.trackEnd;
+      const h=img&&img.complete&&img.naturalWidth
+  ? laneWidth*img.naturalHeight/img.naturalWidth
+  : 100;
       const progress=worldScroll-brokenScrollStart;
-      const h=endImg&&endImg.complete&&endImg.naturalWidth
-        ? laneWidth*endImg.naturalHeight/endImg.naturalWidth
-        : 170;
 
-      const endY=H*0.45+progress;
-      const endTop=endY-h;
+      // The end transition moves upwards as the closed section takes over.
+      const endTop=H-h-progress;
+      const endBottom=endTop+h;
 
-      // Snow-covered ground fills the closed section.
-      rect(left,0,laneWidth,H,'#edf6f4');
-
-      // Keep the normal track visible above the track end.
+      // Normal track above the transition.
       if(endTop>0){
+        drawTiledAsset('track',cx,0,Math.min(H,endTop));
+      }
+
+      // Repeating closed-track tiles below the transition.
+      if(endBottom<H){
+        drawTiledAsset('trackClosed',cx,Math.max(0,endBottom),H);
+      }
+
+      // The one-off transition between normal and closed track.
+      if(img&&img.complete&&img.naturalWidth&&endTop<H&&endBottom>0){
         x.save();
         x.beginPath();
-        x.rect(left,0,laneWidth,Math.min(H,endTop));
+        x.rect(left,Math.max(0,endTop),laneWidth,
+          Math.max(0,Math.min(H,endBottom)-Math.max(0,endTop)));
         x.clip();
-        drawScrollingTrack(cx);
+        x.drawImage(img,left,endTop,laneWidth,h);
         x.restore();
       }
 
-      // Draw the moving end of the railway.
-      if(endImg&&endImg.complete&&endImg.naturalWidth&&endY>0&&endTop<H){
-        x.drawImage(endImg,left,Math.floor(endTop),laneWidth,h);
-      }
-
-      // Subtle snow detail in the exposed section.
-      x.save();
-      x.beginPath();
-      x.rect(left,Math.max(0,endY),laneWidth,Math.max(0,H-endY));
-      x.clip();
-
-      for(let sy=0;sy<H;sy+=37){
-        for(let sx=0;sx<laneWidth;sx+=29){
-          rect(left+sx+((sy/37)%2)*11,sy,3,3,'#d7e9e6');
-        }
-      }
-      x.restore();
-
       continue;
     }
 
+    // REOPENING: repeating Track-Closed -> Track-Start -> normal track.
     if(reopening){
-      const startImg=assets.trackStart;
+      const img=assets.trackStart;
+      const h=img&&img.complete&&img.naturalWidth
+  ? laneWidth*img.naturalHeight/img.naturalWidth
+  : 100;
       const progress=worldScroll-brokenScrollStart;
 
-      // Keep the lane snow-covered while the track returns.
-      rect(left,0,laneWidth,H,'#edf6f4');
+      // Track-Start moves upwards, revealing normal track behind it.
+      const startTop=H-progress;
+      const startBottom=startTop+h;
 
-      if(startImg&&startImg.complete&&startImg.naturalWidth){
-        const h=laneWidth*startImg.naturalHeight/startImg.naturalWidth;
-        const startY=-h+progress;
-        const startBottom=startY+h;
+      // Repeating closed-track tiles above the transition.
+      if(startTop>0){
+        drawTiledAsset('trackClosed',cx,0,Math.min(H,startTop));
+      }
 
-        // Draw the returning track-start section.
-        if(startY<H&&startBottom>0){
-          x.drawImage(startImg,left,Math.floor(startY),laneWidth,h);
-        }
+      // Normal track below the transition.
+      if(startBottom<H){
+        drawTiledAsset('track',cx,Math.max(0,startBottom),H);
+      }
 
-        // Normal track follows underneath the returning section.
-        if(startBottom<H){
-          x.save();
-          x.beginPath();
-          x.rect(left,Math.max(0,startBottom),laneWidth,H-Math.max(0,startBottom));
-          x.clip();
-          drawScrollingTrack(cx);
-          x.restore();
-        }
+      // The one-off transition back to normal track.
+      if(img&&img.complete&&img.naturalWidth&&startTop<H&&startBottom>0){
+        x.save();
+        x.beginPath();
+        x.rect(left,Math.max(0,startTop),laneWidth,
+          Math.max(0,Math.min(H,startBottom)-Math.max(0,startTop)));
+        x.clip();
+        x.drawImage(img,left,startTop,laneWidth,h);
+        x.restore();
       }
 
       continue;
     }
 
+    // All unaffected lanes continue using the normal repeating track.
     drawScrollingTrack(cx);
   }
 
@@ -159,6 +182,7 @@ function background(dt){
     x.restore();
   }
 }
+
 
 
 function present(px,py){
