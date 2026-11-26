@@ -1239,6 +1239,9 @@
             if (!o.done && previousY < hitY && o.y >= hitY) {
               o.done = true;
 
+              // Only interact with items in the train's current lane.
+              if (o.lane !== lane) continue;
+
               if (o.kind === 'present') {
                 combo++;
 
@@ -1246,6 +1249,7 @@
                 presentCollectSound.play().catch(() => { });
 
                 o.collected = true;
+
               } else if (o.kind === 'shield') {
                 shield = 1;
 
@@ -1253,6 +1257,7 @@
                 shieldSound.play().catch(() => { });
 
                 o.collected = true;
+
               } else if (o.kind === 'obstacle') {
                 if (shield) {
                   shield = 0;
