@@ -905,12 +905,14 @@
         if (!player) {
           $('username').focus();
           $('username').style.borderColor = '#ff7777';
+          alert('Please enter your player name.');
           return;
         }
 
         if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
           $('email').focus();
           $('email').style.borderColor = '#ff7777';
+          alert('Please enter a valid email address.');
           return;
         }
 
