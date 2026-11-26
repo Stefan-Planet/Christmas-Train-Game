@@ -498,7 +498,7 @@
         <div class="panel leaderboard">
           <div class="eyebrow">THE NICE LIST</div>
           <h1 style="font-size:20px">LEADERBOARD</h1>
-          <p>Top runs saved on this browser.</p>
+          <p>Top 10 conductors of the Planet Express!.</p>
           <table class="scores">
             <thead>
               <tr>
@@ -510,7 +510,7 @@
             <tbody id="scoreRows"></tbody>
           </table>
           <div class="buttons"><button class="btn secondary" id="leaderBack">← BACK</button></div>
-          <p class="hint">Shared online scores can be added for the final version.</p>
+          <p class="hint">Winner will receive a special present!</p>
         </div>
       </div>
       <div class="overlay hidden" id="gameover">
@@ -529,6 +529,9 @@
   </div>
 
   <script>(() => {
+      const LEADERBOARD_URL = 'https://script.google.com/macros/s/AKfycbyJdpLXdQga8k8od4pWZoEXN0vb8FCh_iPeSzSP7AZycK412fuWBwZydaNR4z0EQSbE/exec';
+      let scoreSubmission = Promise.resolve();
+
       const c = document.getElementById('game'), x = c.getContext('2d'); let W = 600, H = 800;
       // GitHub Pages asset paths (case-sensitive).
       const assets = {};
@@ -958,6 +961,67 @@
         decorationTimer = 0.4;
         spawnTimer = 1.15; shield = 0; flash = 0; combo = 0; elapsed = 0; worldScroll = 0; brokenTrackState = 'idle'; brokenLane = 1; brokenTimer = 0; brokenStarted = false; nextBrokenAt = Infinity; slalomQueue = []; slalomCooldown = 0; blizzardState = 'idle'; blizzardTimer = 12 + Math.random() * 8; blizzardTime = 0; blizzardFlakes.forEach(f => { f.x = Math.random() * W; f.y = Math.random() * H }); hud()
       }
+
+      function submitScore() {
+        const body = new URLSearchParams({
+          email,
+          username: player,
+          score: String(score)
+        });
+
+        scoreSubmission = fetch(LEADERBOARD_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          body
+        }).catch(err => {
+          console.warn('Could not submit score:', err);
+        });
+      }
+
+      function loadLeaderboard() {
+        const callbackName = 'peLeaderboardCallback';
+
+        const oldScript = document.getElementById('leaderboardJsonp');
+        if (oldScript) oldScript.remove();
+
+        delete window[callbackName];
+
+        window[callbackName] = result => {
+          delete window[callbackName];
+
+          const script = document.getElementById('leaderboardJsonp');
+          if (script) script.remove();
+
+          if (!result || !result.success) {
+            $('scoreRows').innerHTML =
+              '<tr><td colspan="3" style="text-align:center;padding:22px">Could not load leaderboard. Please try again.</td></tr>';
+            return;
+          }
+
+          const data = result.scores || [];
+
+          $('scoreRows').innerHTML = data.length
+            ? data.map((r, i) =>
+              `<tr><td>${i + 1}</td><td>${escapeHtml(r.username)}</td><td>${Number(r.score).toLocaleString()}</td></tr>`
+            ).join('')
+            : '<tr><td colspan="3" style="text-align:center;padding:22px">No runs yet — be the first!</td></tr>';
+        };
+
+        const script = document.createElement('script');
+        script.id = 'leaderboardJsonp';
+        script.src = `${LEADERBOARD_URL}?prefix=${callbackName}&t=${Date.now()}`;
+
+        script.onerror = () => {
+          delete window[callbackName];
+          script.remove();
+
+          $('scoreRows').innerHTML =
+            '<tr><td colspan="3" style="text-align:center;padding:22px">Could not connect to the leaderboard. Please try again.</td></tr>';
+        };
+
+        document.body.appendChild(script);
+      }
+
       function start() {
         player = $('username').value.trim();
         email = $('email').value.trim();
@@ -979,8 +1043,6 @@
         $('username').style.borderColor = '#527b78';
         $('email').style.borderColor = '#527b78';
 
-        localStorage.setItem('xmasExpressProfile', JSON.stringify({ name: player, email }));
-
         reset();
         mode = 'playing';
         ['menu', 'leader', 'gameover'].forEach(id => $(id).classList.add('hidden'));
@@ -992,16 +1054,39 @@
 
       $('email').addEventListener('input', () => {
         $('email').style.borderColor = '#435c7d';
-      }); function finish() {
+      });
+      function finish() {
         if (mode !== 'playing') return;
 
         crashSound.currentTime = 0;
         crashSound.play().catch(() => { });
 
         mode = 'over';
-        $('hud').classList.add('hidden'); let data = JSON.parse(localStorage.getItem('xmasExpressScores') || '[]'); data.push({ name: player, score, date: Date.now() }); data.sort((a, b) => b.score - a.score); localStorage.setItem('xmasExpressScores', JSON.stringify(data.slice(0, 10))); $('resultText').textContent = `${player} — final score ${score}. Presents collected: ${combo} · Distance: ${Math.floor(distance)}m.`; $('gameover').classList.remove('hidden')
+        $('hud').classList.add('hidden');
+
+        // Submit this run to the shared online leaderboard.
+        submitScore();
+
+        $('resultText').textContent = `${player} — final score ${score}. Presents collected: ${combo} · Distance: ${Math.floor(distance)}m.`;
+
+        $('gameover').classList.remove('hidden');
       }
-      function board() { let data = JSON.parse(localStorage.getItem('xmasExpressScores') || '[]'); $('scoreRows').innerHTML = data.length ? data.slice(0, 10).map((r, i) => `<tr><td>${i + 1}</td><td>${escapeHtml(r.name)}</td><td>${r.score}</td></tr>`).join('') : '<tr><td colspan="3" style="text-align:center;padding:22px">No runs yet — be the first!</td></tr>'; $('leader').classList.remove('hidden'); $('menu').classList.add('hidden'); $('gameover').classList.add('hidden') }
+
+
+      async function board() {
+        $('scoreRows').innerHTML =
+          '<tr><td colspan="3" style="text-align:center;padding:22px">Loading scores...</td></tr>';
+
+        $('leader').classList.remove('hidden');
+        $('menu').classList.add('hidden');
+        $('gameover').classList.add('hidden');
+
+        // Wait for the latest score submission before loading the leaderboard.
+        await scoreSubmission;
+
+        loadLeaderboard();
+      }
+
       function escapeHtml(s) { return String(s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])) }
       function move(d) {
         if (mode !== 'playing') return; let target = Math.max(0, Math.min(2, lane + d)); if ((brokenTrackState === 'active' || brokenTrackState === 'reopening') && target === brokenLane) { flash = Math.max(flash, .12); return } lane = target
