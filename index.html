@@ -1277,7 +1277,8 @@
       requestAnimationFrame(frame);
     }
 
-      requestAnimationFrame(frame);
+    requestAnimationFrame(frame);
+
     document.addEventListener('keydown', e => { const target = e.target; const typing = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable); if (typing) return; if (['ArrowLeft', 'ArrowRight', 'a', 'A', 'd', 'D'].includes(e.key) && mode === 'playing') { e.preventDefault(); move(e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A' ? -1 : 1) } if (e.key === 'Enter' && mode === 'menu' && !typing) start() }); $('startBtn').onclick = start; $('leaderBtn').onclick = board; $('leaderBack').onclick = () => { $('leader').classList.add('hidden'); $('menu').classList.remove('hidden') }; $('againBtn').onclick = () => {
       reset();
       mode = 'playing';
