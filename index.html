@@ -549,6 +549,15 @@
         snowman: 'assets/obstacles/Snowman.png',
         tree: 'assets/obstacles/Tree.png'
       };
+      const presentCollectSound = new Audio('assets/sfx/collect.wav');
+      presentCollectSound.volume = 0.6;
+
+      const crashSound = new Audio('assets/sfx/crash.wav');
+      crashSound.volume = 0.7;
+
+      const shieldSound = new Audio('assets/sfx/shield-on.wav');
+      shieldSound.volume = 0.6;
+
       for (const [key, src] of Object.entries(assetFiles)) { const img = new Image(); img.src = src; img.onload = () => { assets[key] = img }; img.onerror = () => console.warn('Could not load game asset:', src); }
       const laneWidth = 110; // 10px white gap between 110px-wide lanes, 120px centre spacing.
       const drawAsset = (key, px, py, w, h) => { const img = assets[key]; if (img && img.complete && img.naturalWidth) { x.drawImage(img, Math.round(px - w / 2), Math.round(py - h / 2), w, h); return true } return false; }; function resize() { let r = c.getBoundingClientRect(), d = Math.min(devicePixelRatio || 1, 2); c.width = r.width * d; c.height = r.height * d; x.setTransform(c.width / W, 0, 0, c.height / H, 0, 0) } new ResizeObserver(resize).observe(c); resize(); const $ = id => document.getElementById(id); let mode = 'menu', lane = 1, score = 0, distance = 0, speed = 240, items = [], spawnTimer = 0, shield = 0, flash = 0, last = 0, combo = 0, player = 'Driver', email = '', elapsed = 0, worldScroll = 0; let brokenTrackState = 'idle', brokenLane = 1, brokenTimer = 0, brokenStarted = false, nextBrokenAt = Infinity, slalomQueue = [], slalomCooldown = 0;
@@ -983,7 +992,15 @@
 
       $('email').addEventListener('input', () => {
         $('email').style.borderColor = '#435c7d';
-      }); function finish() { if (mode !== 'playing') return; mode = 'over'; $('hud').classList.add('hidden'); let data = JSON.parse(localStorage.getItem('xmasExpressScores') || '[]'); data.push({ name: player, score, date: Date.now() }); data.sort((a, b) => b.score - a.score); localStorage.setItem('xmasExpressScores', JSON.stringify(data.slice(0, 10))); $('resultText').textContent = `${player} — final score ${score}. Presents collected: ${combo} · Distance: ${Math.floor(distance)}m.`; $('gameover').classList.remove('hidden') }
+      }); function finish() {
+        if (mode !== 'playing') return;
+
+        crashSound.currentTime = 0;
+        crashSound.play().catch(() => { });
+
+        mode = 'over';
+        $('hud').classList.add('hidden'); let data = JSON.parse(localStorage.getItem('xmasExpressScores') || '[]'); data.push({ name: player, score, date: Date.now() }); data.sort((a, b) => b.score - a.score); localStorage.setItem('xmasExpressScores', JSON.stringify(data.slice(0, 10))); $('resultText').textContent = `${player} — final score ${score}. Presents collected: ${combo} · Distance: ${Math.floor(distance)}m.`; $('gameover').classList.remove('hidden')
+      }
       function board() { let data = JSON.parse(localStorage.getItem('xmasExpressScores') || '[]'); $('scoreRows').innerHTML = data.length ? data.slice(0, 10).map((r, i) => `<tr><td>${i + 1}</td><td>${escapeHtml(r.name)}</td><td>${r.score}</td></tr>`).join('') : '<tr><td colspan="3" style="text-align:center;padding:22px">No runs yet — be the first!</td></tr>'; $('leader').classList.remove('hidden'); $('menu').classList.add('hidden'); $('gameover').classList.add('hidden') }
       function escapeHtml(s) { return String(s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])) }
       function move(d) {
@@ -1222,45 +1239,52 @@
             if (!o.done && previousY < hitY && o.y >= hitY) {
               o.done = true;
 
-              if (o.lane === lane) {
-                if (o.kind === 'present') {
-                  combo++;
-                  o.collected = true;
-                } else if (o.kind === 'shield') {
-                  shield = 1;
-                  o.collected = true;
-                } else if (o.kind === 'obstacle') {
-                  if (shield) {
-                    shield = 0;
-                    flash = .9;
-                  } else if (flash <= 0) {
-                    finish();
-                  }
+              if (o.kind === 'present') {
+                combo++;
+
+                presentCollectSound.currentTime = 0;
+                presentCollectSound.play().catch(() => { });
+
+                o.collected = true;
+              } else if (o.kind === 'shield') {
+                shield = 1;
+
+                shieldSound.currentTime = 0;
+                shieldSound.play().catch(() => { });
+
+                o.collected = true;
+              } else if (o.kind === 'obstacle') {
+                if (shield) {
+                  shield = 0;
+                  flash = .9;
+                } else if (flash <= 0) {
+                  finish();
                 }
               }
             }
           }
-
-          items = items.filter(o => o.y < H + 100 && !o.collected);
-          flash = Math.max(0, flash - dt);
-
-          let multiplier = 1 + Math.min(2, Math.floor(combo / 5) * .25);
-          score = Math.floor(distance * 2 + combo * 100 * multiplier);
-          hud();
         }
 
-        draw();
-        requestAnimationFrame(frame);
+        items = items.filter(o => o.y < H + 100 && !o.collected);
+        flash = Math.max(0, flash - dt);
+
+        let multiplier = 1 + Math.min(2, Math.floor(combo / 5) * .25);
+        score = Math.floor(distance * 2 + combo * 100 * multiplier);
+        hud();
       }
 
+      draw();
       requestAnimationFrame(frame);
-      document.addEventListener('keydown', e => { const target = e.target; const typing = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable); if (typing) return; if (['ArrowLeft', 'ArrowRight', 'a', 'A', 'd', 'D'].includes(e.key) && mode === 'playing') { e.preventDefault(); move(e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A' ? -1 : 1) } if (e.key === 'Enter' && mode === 'menu' && !typing) start() }); $('startBtn').onclick = start; $('leaderBtn').onclick = board; $('leaderBack').onclick = () => { $('leader').classList.add('hidden'); $('menu').classList.remove('hidden') }; $('againBtn').onclick = () => {
-        reset();
-        mode = 'playing';
-        $('gameover').classList.add('hidden');
-        $('hud').classList.remove('hidden');
-      }; $('overBoardBtn').onclick = board; $('homeBtn').onclick = () => { $('gameover').classList.add('hidden'); $('menu').classList.remove('hidden'); $('hud').classList.add('hidden'); mode = 'menu' }; $('leftBtn').onclick = () => move(-1); $('rightBtn').onclick = () => move(1); let tx = null, ty = null; c.addEventListener('touchstart', e => { tx = e.changedTouches[0].clientX; ty = e.changedTouches[0].clientY }, { passive: true }); c.addEventListener('touchend', e => { if (tx === null) return; let dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty; if (Math.abs(dx) > 24 && Math.abs(dx) > Math.abs(dy)) move(dx < 0 ? -1 : 1); tx = ty = null }, { passive: true });
-    })();</script>
+    }
+
+      requestAnimationFrame(frame);
+    document.addEventListener('keydown', e => { const target = e.target; const typing = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable); if (typing) return; if (['ArrowLeft', 'ArrowRight', 'a', 'A', 'd', 'D'].includes(e.key) && mode === 'playing') { e.preventDefault(); move(e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A' ? -1 : 1) } if (e.key === 'Enter' && mode === 'menu' && !typing) start() }); $('startBtn').onclick = start; $('leaderBtn').onclick = board; $('leaderBack').onclick = () => { $('leader').classList.add('hidden'); $('menu').classList.remove('hidden') }; $('againBtn').onclick = () => {
+      reset();
+      mode = 'playing';
+      $('gameover').classList.add('hidden');
+      $('hud').classList.remove('hidden');
+    }; $('overBoardBtn').onclick = board; $('homeBtn').onclick = () => { $('gameover').classList.add('hidden'); $('menu').classList.remove('hidden'); $('hud').classList.add('hidden'); mode = 'menu' }; $('leftBtn').onclick = () => move(-1); $('rightBtn').onclick = () => move(1); let tx = null, ty = null; c.addEventListener('touchstart', e => { tx = e.changedTouches[0].clientX; ty = e.changedTouches[0].clientY }, { passive: true }); c.addEventListener('touchend', e => { if (tx === null) return; let dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty; if (Math.abs(dx) > 24 && Math.abs(dx) > Math.abs(dy)) move(dx < 0 ? -1 : 1); tx = ty = null }, { passive: true });
+    }) ();</script>
 </body>
 
 </html>
