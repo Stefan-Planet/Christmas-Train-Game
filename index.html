@@ -728,12 +728,14 @@
           Math.floor(Math.random() * decorationKeys.length)
         ];
 
+        const isBauble = key.startsWith('bauble');
+
         decorativeItems.push({
           key,
           x: px,
           y: -60 - Math.random() * 40,
-          width: 60,
-          height: 80
+          width: isBauble ? 60 : 54,
+          height: isBauble ? 33 : 58
         });
       }
 
