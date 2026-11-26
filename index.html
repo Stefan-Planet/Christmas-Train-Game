@@ -902,7 +902,6 @@
         player = $('username').value.trim();
         email = $('email').value.trim();
 
-        // Require both fields.
         if (!player) {
           $('username').focus();
           $('username').style.borderColor = '#ff7777';
@@ -1161,7 +1160,12 @@
       }
 
       requestAnimationFrame(frame);
-      document.addEventListener('keydown', e => { const target = e.target; const typing = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable); if (typing) return; if (['ArrowLeft', 'ArrowRight', 'a', 'A', 'd', 'D'].includes(e.key) && mode === 'playing') { e.preventDefault(); move(e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A' ? -1 : 1) } if (e.key === 'Enter' && mode === 'menu' && !typing) start() }); $('startBtn').onclick = start; $('leaderBtn').onclick = board; $('leaderBack').onclick = () => { $('leader').classList.add('hidden'); $('menu').classList.remove('hidden') }; $('againBtn').onclick = start; $('overBoardBtn').onclick = board; $('homeBtn').onclick = () => { $('gameover').classList.add('hidden'); $('menu').classList.remove('hidden'); $('hud').classList.add('hidden'); mode = 'menu' }; $('leftBtn').onclick = () => move(-1); $('rightBtn').onclick = () => move(1); let tx = null, ty = null; c.addEventListener('touchstart', e => { tx = e.changedTouches[0].clientX; ty = e.changedTouches[0].clientY }, { passive: true }); c.addEventListener('touchend', e => { if (tx === null) return; let dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty; if (Math.abs(dx) > 24 && Math.abs(dx) > Math.abs(dy)) move(dx < 0 ? -1 : 1); tx = ty = null }, { passive: true });
+      document.addEventListener('keydown', e => { const target = e.target; const typing = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable); if (typing) return; if (['ArrowLeft', 'ArrowRight', 'a', 'A', 'd', 'D'].includes(e.key) && mode === 'playing') { e.preventDefault(); move(e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A' ? -1 : 1) } if (e.key === 'Enter' && mode === 'menu' && !typing) start() }); $('startBtn').onclick = start; $('leaderBtn').onclick = board; $('leaderBack').onclick = () => { $('leader').classList.add('hidden'); $('menu').classList.remove('hidden') }; $('againBtn').onclick = () => {
+        reset();
+        mode = 'playing';
+        $('gameover').classList.add('hidden');
+        $('hud').classList.remove('hidden');
+      }; $('overBoardBtn').onclick = board; $('homeBtn').onclick = () => { $('gameover').classList.add('hidden'); $('menu').classList.remove('hidden'); $('hud').classList.add('hidden'); mode = 'menu' }; $('leftBtn').onclick = () => move(-1); $('rightBtn').onclick = () => move(1); let tx = null, ty = null; c.addEventListener('touchstart', e => { tx = e.changedTouches[0].clientX; ty = e.changedTouches[0].clientY }, { passive: true }); c.addEventListener('touchend', e => { if (tx === null) return; let dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty; if (Math.abs(dx) > 24 && Math.abs(dx) > Math.abs(dy)) move(dx < 0 ? -1 : 1); tx = ty = null }, { passive: true });
     })();</script>
 </body>
 
