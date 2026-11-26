@@ -729,6 +729,34 @@
           x.restore();
         }
       }
+      function populateInitialDecorations() {
+        decorativeItems = [];
+
+        const positions = [
+          { x: 62, y: 80 },
+          { x: 540, y: 190 },
+          { x: 80, y: 330 },
+          { x: 525, y: 450 },
+          { x: 60, y: 590 },
+          { x: 545, y: 720 }
+        ];
+
+        positions.forEach((pos, i) => {
+          const key = decorationKeys[
+            Math.floor(Math.random() * decorationKeys.length)
+          ];
+
+          const isBauble = key.startsWith('bauble');
+
+          decorativeItems.push({
+            key,
+            x: pos.x,
+            y: pos.y,
+            width: isBauble ? 60 : 54,
+            height: isBauble ? 33 : 58
+          });
+        });
+      }
       function spawnDecoration() {
         const side = Math.random() < 0.5 ? 'left' : 'right';
 
@@ -958,7 +986,7 @@
       function hud() { $('score').textContent = String(score).padStart(4, '0'); $('distance').textContent = Math.floor(distance) + 'm'; $('multi').textContent = '×' + (1 + Math.min(2, Math.floor(combo / 5) * .25)).toFixed(2); $('shieldHud').textContent = shield ? 'SHIELD ON' : '' }
       function reset() {
         lane = 1; score = 0; distance = 0; speed = 240; items = [];
-        decorativeItems = [];
+        populateInitialDecorations();
         decorationTimer = 0.4;
         spawnTimer = 1.15; shield = 0; flash = 0; combo = 0; elapsed = 0; worldScroll = 0; brokenTrackState = 'idle'; brokenLane = 1; brokenTimer = 0; brokenStarted = false; nextBrokenAt = Infinity; slalomQueue = []; slalomCooldown = 0; blizzardState = 'idle'; blizzardTimer = 12 + Math.random() * 8; blizzardTime = 0; blizzardFlakes.forEach(f => { f.x = Math.random() * W; f.y = Math.random() * H }); hud()
       }
