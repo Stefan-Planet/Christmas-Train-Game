@@ -371,6 +371,30 @@
       }
     }
 
+    /* Fit the game to shorter desktop and laptop screens */
+    @media (min-width: 651px) {
+      body {
+        padding: 10px 18px;
+      }
+
+      .brand-footer {
+        min-height: 55px;
+        padding: 5px 15px;
+      }
+
+      .brand-footer img {
+        max-height: 35px;
+      }
+
+      .shell {
+        width: min(100%, 620px, calc((100vh - 175px) * 0.75 + 8px));
+      }
+
+      .stage {
+        min-height: 0;
+      }
+    }
+
     @media(max-width:650px) {
       body {
         min-height: 100dvh;
@@ -482,7 +506,7 @@
       <div class="overlay" id="menu">
         <div class="panel">
           <div class="eyebrow">ALL ABOARD FOR ADVENTURE</div>
-          <h1>PLANET XMAS<br>EXPRESS</h1>
+          <h1>PLANET'S XMAS<br>EXPRESS</h1>
           <p>Drive Santa's festive steam train through a snowy wonderland. Switch tracks, gather presents and dodge the
             hazards! Pick up a shield for one-time protection!</p>
           <div class="field"><label>YOUR PLAYER NAME *</label>
